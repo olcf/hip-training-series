@@ -2,7 +2,11 @@
 
 ## Introduction to HIP Exercises
 
-`git clone https://github.com/amd/HPCTrainingExamples.git`
+For the HIP Lecture Series, the examples can be retrieved from this repository.
+
+`git clone https://github.com/olcf/hip-training-series`
+
+This markdown document contains the instructions to run the examples.
 
 For the first interactive example, get an slurm interactive session
 
