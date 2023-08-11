@@ -88,6 +88,7 @@ module load amd-mixed
 CXX=CC CRAY_CPU_TARGET=x86-64 make vectoradd
 srun ./vectoradd
 ``` 
+And with the cmake build system.
 
 ```
 module load PrgEnv-cray
