@@ -6,11 +6,17 @@ For the HIP Lecture Series, the examples can be retrieved from this repository.
 
 `git clone https://github.com/olcf/hip-training-series`
 
-This markdown document contains the instructions to run the examples.
+This markdown document is located at `'Lecture1/01 Exercises for HIP Introduction.md'` contains 
+the instructions to run the examples. You can view it in github for better readability or
+download the pdf file `'Lecture1/01 Exercises for HIP Introduction.pdf'` which has been
+generated from the markdown document.
 
 For the first interactive example, get an slurm interactive session
 
 `salloc -N 1 -p batch --gpus=1 -t 10:00 -A <project>`
+
+Use your project id in the project field. If you do not remember it, run the command without
+the -A option and it should report your valid projects.
 
 ```
 module load PrgEnv-amd
@@ -20,9 +26,12 @@ module load cmake
 
 ### Basic examples
 
-`cd HPCTrainingExamples/HIP/vectorAdd `
+`cd hip-training-series/Lecture1/vectorAdd `
 
-Examine files here – README, Makefile, CMakeLists.txt and vectoradd.hip. Notice that Makefile requires ROCM_PATH to be set. Check with module show rocm or echo $ROCM_PATH Also, the Makefile builds and runs the code. We’ll do the steps separately. Check also the HIPFLAGS in the Makefile. There is also a CMakeLists.txt file to use for a cmake build.
+Examine files here – README, Makefile, CMakeLists.txt and vectoradd.hip. Notice that the 
+Makefile requires ROCM_PATH to be set. Check with module show rocm or echo $ROCM_PATH. Also, the 
+Makefile builds and runs the code. We’ll do the steps separately. Check also the HIPFLAGS 
+in the Makefile. There is also a CMakeLists.txt file to use for a cmake build.
 
 For the portable Makefile system
 ```
