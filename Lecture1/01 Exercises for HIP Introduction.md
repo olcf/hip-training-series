@@ -71,7 +71,7 @@ Submit the script
 
 Check for output in `slurm-<job-id>.out` or error in `slurm-<job-id>.err`
 
-To use the cmake option in the batch file, change the build to
+To use the cmake option in the batch file, change the build commands in the batch file to
 
 ```
 mkdir build && cd build
