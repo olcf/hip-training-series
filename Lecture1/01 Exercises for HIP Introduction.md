@@ -26,7 +26,7 @@ module load cmake
 
 ### Basic examples
 
-`cd hip-training-series/Lecture1/vectorAdd `
+`cd hip-training-series/Lecture1/HIP/vectorAdd `
 
 Examine files here – README, Makefile, CMakeLists.txt and vectoradd.hip. Notice that the 
 Makefile requires ROCM_PATH to be set. Check with module show rocm or echo $ROCM_PATH. Also, the 
@@ -46,6 +46,16 @@ cmake ..
 make
 srun ./vectoradd
 ```
+Now clean up from these exercises before the next part.
+
+```
+cd ..
+make clean
+rm -rf build
+module unload PrgEnv-amd
+module unload amd
+module unload cmake
+```
 
 We can use a SLURM submission script, let's call it `hip_batch.sh`. There is a sample script
 for some systems in the example directory.
@@ -60,7 +70,8 @@ for some systems in the example directory.
 
 module load PrgEnv-amd
 module load amd
-cd $HOME/HPCTrainingExamples/HIP/vectorAdd 
+module load cmake
+cd $HOME/hip-training-series/Lecture1/HIP/vectorAdd 
 
 make vectoradd
 srun ./vectoradd
@@ -85,6 +96,7 @@ Compile and run with Cray compiler
 ```
 module load PrgEnv-cray
 module load amd-mixed
+module load cmake
 CXX=CC CRAY_CPU_TARGET=x86-64 make vectoradd
 srun ./vectoradd
 ``` 
@@ -99,12 +111,23 @@ CXX=CC CRAY_CPU_TARGET=x86-64 cmake ..
 make
 srun ./vectoradd
 ``` 
+Before moving onto another example, first clean up from the previous work.
+
+```
+cd ..
+make clean
+rm -rf build
+module unload PrgEnv-cray
+module unload amd-mixed
+module unload cmake
+```
 
 Now let’s try the hip-stream example. This example is from the original McCalpin code as ported to CUDA by Nvidia. This version has been ported to use HIP.
 
 ```
 module load PrgEnv-amd
 module load amd
+module load cmake
 cd $HOME/HPCTrainingExamples/HIP/hip-stream
 make
 srun ./stream
@@ -113,7 +136,7 @@ Note that it builds with the hipcc compiler. You should get a report of the Copy
 
 On your own:
 
-1. Check out the saxpy example in `HPCTrainingExamples/HIP`
+1. Check out the saxpy example in `hip-training-series/Lecture1/HIP`
 2. Write your own kernel and run it
 3. Test the code on an Nvidia system -- Add `HIPCC=nvcc` before the make command or `-DCMAKE_GPU_RUNTIME=CUDA` to the cmake command. (See README file)
 
@@ -123,7 +146,7 @@ The jacobi example has a more complex build that incorporates MPI. The original 
 added to demonstrate a portable cmake build. From an interactive session, try the following steps
 
 ```
-cd $HOME/HPCTrainingExamples/HIP/jacobi
+cd $HOME/hip-training-series/Lecture1/HIP/jacobi
 
 module load PrgEnv-amd
 module load amd
