@@ -22,6 +22,7 @@ the -A option and it should report your valid projects.
 module load PrgEnv-amd
 module load amd
 module load cmake
+export CXX=${ROCM_PATH}/llvm/bin/clang++
 ```
 
 ### Basic examples
