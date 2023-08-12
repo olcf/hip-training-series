@@ -135,11 +135,44 @@ srun ./stream
 ```
 Note that it builds with the hipcc compiler. You should get a report of the Copy, Scale, Add, and Triad cases.
 
+Test the code on an Nvidia system -- Add `HIPCC=nvcc` before the make command or `-DCMAKE_GPU_RUNTIME=CUDA` to the cmake command. (See README file)
+
+Load the environment for Nvidia
+
+```
+module load rocm
+module load cuda/11.8.
+module load cmake
+```
+Build the example
+
+```
+cd ~/hip-training-series/Lecture1/HIP/vectorAdd
+HIPCC=nvcc make
+srun ./vectoradd
+```
+Cleanup
+
+```
+make clean
+```
+For the cmake build
+
+```
+mkdir build && cd build
+cmake -DCMAKE_GPU_RUNTIME=CUDA ..
+make
+srun ./vectoradd
+```
+Cleanup
+```
+cd ..
+rm -rf build
+```
 On your own:
 
 1. Check out the saxpy example in `hip-training-series/Lecture1/HIP`
 2. Write your own kernel and run it
-3. Test the code on an Nvidia system -- Add `HIPCC=nvcc` before the make command or `-DCMAKE_GPU_RUNTIME=CUDA` to the cmake command. (See README file)
 
 ### More advanced HIP makefile
 
