@@ -6,6 +6,9 @@ For the HIP Lecture Series, the examples can be retrieved from this repository.
 
 `git clone https://github.com/olcf/hip-training-series`
 
+Below are instructions for doing the exercises on OLCF Frontier. For NERSC Perlmutter, please 
+see [Lecture 1 Exercises for Perlmutter](https://github.com/NERSC/hip-training-series/tree/perlmutter/Lecture1).
+
 This markdown document is located at `'Lecture1/01 Exercises for HIP Introduction.md'` contains 
 the instructions to run the examples. You can view it in github for better readability or
 download the pdf file `'Lecture1/01 Exercises for HIP Introduction.pdf'` which has been
@@ -22,6 +25,7 @@ the -A option and it should report your valid projects.
 module load PrgEnv-amd
 module load amd
 module load cmake
+export CXX=${ROCM_PATH}/llvm/bin/clang++
 ```
 
 ### Basic examples
@@ -134,11 +138,44 @@ srun ./stream
 ```
 Note that it builds with the hipcc compiler. You should get a report of the Copy, Scale, Add, and Triad cases.
 
+Test the code on an Nvidia system -- Add `HIPCC=nvcc` before the make command or `-DCMAKE_GPU_RUNTIME=CUDA` to the cmake command. (See README file)
+
+Load the environment for Nvidia
+
+```
+module load rocm
+module load CUDA/11.8
+module load cmake
+```
+Build the example
+
+```
+cd ~/hip-training-series/Lecture1/HIP/vectorAdd
+HIPCC=nvcc make vectoradd
+srun ./vectoradd
+```
+Cleanup
+
+```
+make clean
+```
+For the cmake build
+
+```
+mkdir build && cd build
+cmake -DCMAKE_GPU_RUNTIME=CUDA ..
+make
+srun ./vectoradd
+```
+Cleanup
+```
+cd ..
+rm -rf build
+```
 On your own:
 
 1. Check out the saxpy example in `hip-training-series/Lecture1/HIP`
 2. Write your own kernel and run it
-3. Test the code on an Nvidia system -- Add `HIPCC=nvcc` before the make command or `-DCMAKE_GPU_RUNTIME=CUDA` to the cmake command. (See README file)
 
 ### More advanced HIP makefile
 
