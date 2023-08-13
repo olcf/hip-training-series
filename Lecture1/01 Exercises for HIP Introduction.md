@@ -6,8 +6,15 @@ For the HIP Lecture Series, the examples can be retrieved from this repository.
 
 `git clone https://github.com/olcf/hip-training-series`
 
-Below are instructions for doing the exercises on OLCF Frontier. For NERSC Perlmutter, please 
+Below are instructions for doing the exercises on OLCF Frontier. For NERSC Perlmutter, there are two different
+approaches we'll explore for the hands-on exercises. The first is the conventional, simpler approach of 
+separate repositories and build systems for each platform. For this approach, please 
 see [Lecture 1 Exercises for Perlmutter](https://github.com/NERSC/hip-training-series/tree/perlmutter/Lecture1).
+
+For the single repository, portable build system approach, see the instructions for Nvidia below. NERSC has
+installed the AMD ROCm software stack to enable developers on Perlmutter to begin developing more
+portable applications with a single repository. This can greatly reduce code porting and maintenance
+efforts.
 
 This markdown document is located at `'Lecture1/01 Exercises for HIP Introduction.md'` contains 
 the instructions to run the examples. You can view it in github for better readability or
@@ -140,11 +147,25 @@ Note that it builds with the hipcc compiler. You should get a report of the Copy
 
 Test the code on an Nvidia system -- Add `HIPCC=nvcc` before the make command or `-DCMAKE_GPU_RUNTIME=CUDA` to the cmake command. (See README file)
 
-Load the environment for Nvidia
+For the hands-on exercise on the NERSC Perlmutter system, there is a reservation under the account ntrain8. Get an allocation with
 
 ```
-module load rocm
-module load CUDA/11.8
+salloc -N 1 -C gpu -A ntrain8 --reservation=hip_aug14 -q shared -c 32 -G 1 -t 1:00:00
+```
+
+Outside of reservation window, you can do: 
+```
+salloc -N 1 -C gpu -A <your_project> -q shared -c 32 -G 1 -t 1:00:00
+```
+
+Load the environment for Nvidia. Note that there is an order required. To load the HIP module,
+the GNU environment must already be loaded. Then load the HIP environment. Once the HIP module
+is loaded, you can load the Nvidia programming environment.
+
+```
+module load PrgEnv-gnu/8.3.3
+module load hip/5.4.3
+module load PrgEnv-nvidia/8.3.3
 module load cmake
 ```
 Build the example
