@@ -7,7 +7,7 @@ For the HIP Lecture Series, the examples can be retrieved from this repository.
 `git clone https://github.com/olcf/hip-training-series`
 
 Below are instructions for doing the exercises on OLCF Frontier. For NERSC Perlmutter, please 
-follow README.md at [Lecture 1 Exercises for Perlmutter](https://github.com/NERSC/hip-training-series/tree/perlmutter/Lecture1).
+see [Lecture 1 Exercises for Perlmutter](https://github.com/NERSC/hip-training-series/tree/perlmutter/Lecture1).
 
 This markdown document is located at `'Lecture1/01 Exercises for HIP Introduction.md'` contains 
 the instructions to run the examples. You can view it in github for better readability or
