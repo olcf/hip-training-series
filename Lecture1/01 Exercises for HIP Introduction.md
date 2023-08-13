@@ -144,14 +144,14 @@ Load the environment for Nvidia
 
 ```
 module load rocm
-module load cuda/11.8.
+module load CUDA/11.8
 module load cmake
 ```
 Build the example
 
 ```
 cd ~/hip-training-series/Lecture1/HIP/vectorAdd
-HIPCC=nvcc make
+HIPCC=nvcc make vectoradd
 srun ./vectoradd
 ```
 Cleanup
