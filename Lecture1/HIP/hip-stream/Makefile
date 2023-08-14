@@ -8,14 +8,14 @@ OBJECTS = stream.o
 CXXFLAGS = -g -O2 -DNDEBUG -fPIC
 HIPCC_FLAGS = -g -O2 -DNDEBUG
 
-HIPCC ?= hipcc
+HIP_PLATFORM ?= amd
 HIP_PATH ?= $(shell hipconfig --path)
 
-ifeq ($(HIPCC), nvcc)
+ifeq ($(HIP_PLATFORM), nvidia)
    HIPCC_FLAGS += -x cu -I${HIP_PATH}/include/
    LDFLAGS = -lcudadevrt -lcudart_static -lrt -lpthread -ldl
 endif
-ifeq ($(HIPCC), hipcc)
+ifeq ($(HIP_PLATFORM), hipcc)
    HIPCC_FLAGS += -x hip -munsafe-fp-atomics
    LDFLAGS = -L${ROCM_PATH}/hip/lib -lamdhip64
 endif
