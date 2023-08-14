@@ -9,7 +9,6 @@ CXXFLAGS = -g -O2 -DNDEBUG -fPIC
 HIPCC_FLAGS = -g -O2 -DNDEBUG
 
 HIPCC ?= hipcc
-LD = hipcc
 HIP_PATH ?= $(shell hipconfig --path)
 
 ifeq ($(HIPCC), nvcc)
@@ -22,10 +21,10 @@ ifeq ($(HIPCC), hipcc)
 endif
 
 %.o: %.hip
-	$(HIPCC) $(HIPCC_FLAGS) -c $^ -o $@
+	hipcc $(HIPCC_FLAGS) -c $^ -o $@
 
 $(EXECUTABLE): $(OBJECTS)
-	$(LD) $< $(LDFLAGS) -o $@
+	hipcc $< $(LDFLAGS) -o $@
 
 test: $(EXECUTABLE)
 	$(EXECUTABLE)
