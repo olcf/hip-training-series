@@ -21,8 +21,11 @@ the instructions to run the examples. You can view it in github for better reada
 download the pdf file `'Lecture1/01 Exercises for HIP Introduction.pdf'` which has been
 generated from the markdown document.
 
-For the first interactive example, get an slurm interactive session
+For the first interactive example, get an slurm interactive session on Frontier (see further below for NERSC Perlmutter):
 
+`salloc -N 1 -p batch --reservation=hip_training_2023_08_14 --gpus=1 -t 10:00 -A <project>`
+
+Outside the reservation window or if you're not on the reservation list, you can do:
 `salloc -N 1 -p batch --gpus=1 -t 10:00 -A <project>`
 
 Use your project id in the project field. If you do not remember it, run the command without
@@ -77,6 +80,7 @@ for some systems in the example directory.
 #SBATCH -N 1
 #SBATCH --gpus=1
 #SBATCH -t 10:00
+#SBATCH --reservation=hip_training_2023_08_14
 #SBATCH -A <your project id>
 
 module load PrgEnv-amd
@@ -147,6 +151,12 @@ Note that it builds with the hipcc compiler. You should get a report of the Copy
 
 Test the code on an Nvidia system -- Add `HIPCC=nvcc` before the make command or `-DCMAKE_GPU_RUNTIME=CUDA` to the cmake command. (See README file)
 
+On your own:
+
+1. Check out the saxpy example in `hip-training-series/Lecture1/HIP`
+2. Write your own kernel and run it
+
+#### NERSC Perlmutter instructions
 For the hands-on exercise on the NERSC Perlmutter system, there is a reservation under the account ntrain8. Get an allocation with
 
 ```
@@ -193,10 +203,8 @@ Cleanup
 cd ..
 rm -rf build
 ```
-On your own:
 
-1. Check out the saxpy example in `hip-training-series/Lecture1/HIP`
-2. Write your own kernel and run it
+
 
 ### More advanced HIP makefile
 
