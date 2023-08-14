@@ -17,7 +17,7 @@ ifeq ($(HIPCC), nvcc)
    LDFLAGS = -lcudadevrt -lcudart_static -lrt -lpthread -ldl
 endif
 ifeq ($(HIPCC), hipcc)
-   HIPCC_FLAGS += -munsafe-fp-atomics
+   HIPCC_FLAGS += -x hip -munsafe-fp-atomics
    LDFLAGS = -L${ROCM_PATH}/hip/lib -lamdhip64
 endif
 
