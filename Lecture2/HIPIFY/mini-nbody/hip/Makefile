@@ -4,14 +4,14 @@ CXXFLAGS =-g -O2
 HIPCC_FLAGS=-O2 -g -DNDEBUG
 HIPCC_FLAGS+=-I.. -DSHMOO
 
-HIPCC?=hipcc
+HIP_PLATFORM ?= amd
 
-ifeq ($(HIPCC), nvcc)
-   HIPCC_FLAGS+=$(HIPCC_OPTS) -x cu
-   LDFLAGS=-lcudadevrt -lcudart_static -lrt -lpthread -ldl
+ifeq ($(HIP_PLATFORM), nvidia)
+   HIP_PATH ?= $(shell hipconfig --path)
+   HIPCC_FLAGS += $(HIPCC_FLAGS) -x cu -I${HIP_PATH}/include/
 endif
-ifeq ($(HIPCC), hipcc)
-   HIPCC_FLAGS+=$(HIPCC_OPTS) -munsafe-fp-atomics
+ifeq ($(HIP_PLATFORM), amd)
+   HIPCC_FLAGS += $(HIPCC_FLAGS) -x hip -munsafe-fp-atomics
    ifeq (, $(findstring CXX, clang++))
       LDFLAGS=--hip-link
    else
@@ -23,7 +23,7 @@ endif
 	hipify-perl $^ > $@
 
 %.o: %.hip
-	$(HIPCC) $(HIPCC_FLAGS) -c $< -o $@
+	hipcc $(HIPCC_FLAGS) -c $^ -o $@
 
 nbody-orig: nbody-orig.o
 	$(CXX) $^ $(LDFLAGS) -o $@
