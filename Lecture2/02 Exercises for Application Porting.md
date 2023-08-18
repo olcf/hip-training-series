@@ -1,17 +1,24 @@
-## Application Porting
+# Porting Applications to HIP
 
-### Hipify Examples
+## Hipify Examples
 
-#### Exercise 1: Manual code conversion from CUDA to HIP (10 min)
+First, get the examples for this lecture
 
-Choose one or more of the CUDA samples in `HPCTrainingExamples/HIPIFY/mini-nbody/cuda` directory. Manually convert it to HIP. Tip: for example, the cudaMalloc will be called hipMalloc.
-You can choose from `nbody-block.cu, nbody-orig.cu, nbody-soa.cu`
+```
+git clone git@github.com:olcf/hip-training-series.git
+```
 
-You’ll want to compile on the node you’ve been allocated so that hipcc will choose the correct GPU architecture.
 
-#### Exercise 2: Code conversion from CUDA to HIP using HIPify tools (10 min)
+### Exercise 1: Manual code conversion from CUDA to HIP (10 min)
 
-Use the `hipify-perl` script to “hipify” the CUDA samples you used to manually convert to HIP in Exercise 1. hipify-perl is in `$ROCM_PATH/hip/bin` directory and should be in your path.
+Choose one or more of the CUDA samples in `hip-training-series/Lecture2/HIPIFY/mini-nbody/cuda` directory. Manually convert it to HIP. Tip: for example, the cudaMalloc will be called hipMalloc.
+You can choose from `nbody-block.cu, nbody-orig.cu, or nbody-soa.cu`
+
+You'll want to compile on the node you've been allocated so that hipcc will choose the correct GPU architecture.
+
+### Exercise 2: Code conversion from CUDA to HIP using HIPify tools (10 min)
+
+Use the `hipify-perl` script to "hipify" the CUDA samples you used to manually convert to HIP in Exercise 1. hipify-perl is in `$ROCM_PATH/hip/bin` directory and should be in your path.
 
 First test the conversion to see what will be converted
 ```
@@ -64,12 +71,14 @@ A batch version of Exercise 2 is:
 #SBATCH --gpus=1
 #SBATCH -p batch
 #SBATCH -A <project id>
+#SBATCH --reservation=<reservation_name>
 #SBATCH -t 00:10:00
 
 module load PrgEnv-amd
 module load amd
+module load cmake
 
-cd HPCTrainingExamples/mini-nbody/cuda
+cd $HOME/hip-training-series/Lecture2/HIPIFY/mini-nbody
 hipify-perl -print-stats nbody-orig.cu > nbody-orig.cpp
 hipcc -DSHMOO -I ../ nbody-orig.cpp -o nbody-orig
 srun ./nbody-orig
@@ -263,7 +272,7 @@ build/pennant test/sedovbig/sedovbig.pnt
 
 So we have the code converted to HIP and fixed the build system for it. But we haven't accomplished our original goal of running with both ROCm and CUDA.
 
-We can copy a sample portable Makefile from `HPCTrainingExamples/HIP/saxpy/Makefile` and modify it for this application.
+We can copy a sample portable Makefile from `hip-training-series/Lecture1/HIP/saxpy/Makefile` and modify it for this application.
 
 
 ```
@@ -280,18 +289,17 @@ OBJECTS += $(BUILDDIR)/TTS.o $(BUILDDIR)/main.o $(BUILDDIR)/ExportGold.o
 OBJECTS += $(BUILDDIR)/Hydro.o $(BUILDDIR)/HydroGPU.o $(BUILDDIR)/InputFile.o
 OBJECTS += $(BUILDDIR)/Parallel.o $(BUILDDIR)/QCS.o $(BUILDDIR)/WriteXY.o
 
-CXXFLAGS = -g -O3
+CXXFLAGS = -g -O3 -DNDEBUG -fPIC
 HIPCC_FLAGS = -O3 -g -DNDEBUG
 
-HIPCC ?= hipcc
+HIP_PLATFORM ?= amd
 
-ifeq ($(HIPCC), nvcc)
-   HIPCC_FLAGS += -x cu
-   LDFLAGS = -lcudadevrt -lcudart_static -lrt -lpthread -ldl
+ifeq ($(HIP_PLATFORM), nvidia)
+   HIP_PATH ?= $(shell hipconfig --path)
+   HIPCC_FLAGS += -x cu -I${HIP_PATH}/include/
 endif
-ifeq ($(HIPCC), hipcc)
-   HIPCC_FLAGS += -munsafe-fp-atomics
-   LDFLAGS = -L${ROCM_PATH}/hip/lib -lamdhip64
+ifeq ($(HIP_PLATFORM), amd)
+   HIPCC_FLAGS += -x hip -munsafe-fp-atomics
 endif
 
 $(BUILDDIR)/%.d : $(SRCDIR)/%.cc
@@ -302,7 +310,7 @@ $(BUILDDIR)/%.d : $(SRCDIR)/%.cc
 $(BUILDDIR)/%.d : $(SRCDIR)/%.hip
 	@echo making depends for $<
 	$(maketargetdir)
-	@$(HIPCC) $(HIPCCFLAGS) $(HIPCCINCLUDES) -M $< | sed "1s![^ \t]\+\.o!$(@:.d=.o) $@!" >$@
+	@hipcc $(HIPCCFLAGS) $(HIPCCINCLUDES) -M $< | sed "1s![^ \t]\+\.o!$(@:.d=.o) $@!" >$@
 
 $(BUILDDIR)/%.o : $(SRCDIR)/%.cc
 	@echo compiling $<
@@ -312,12 +320,12 @@ $(BUILDDIR)/%.o : $(SRCDIR)/%.cc
 $(BUILDDIR)/%.o : $(SRCDIR)/%.hip
 	@echo compiling $<
 	$(maketargetdir)
-	$(HIPCC) $(HIPCC_FLAGS) -c $^ -o $@
+	hipcc $(HIPCC_FLAGS) -c $^ -o $@
 
 $(BUILDDIR)/$(EXECUTABLE) : $(OBJECTS)
 	@echo linking $@
 	$(maketargetdir)
-	$(CXX) $(OBJECTS) $(LDFLAGS) -o $@
+	hipcc $(OBJECTS) $(LDFLAGS) -o $@
 
 test : $(BUILDDIR)/$(EXECUTABLE)
 	$(BUILDDIR)/$(EXECUTABLE) test/sedovbig/sedovbig.pnt
@@ -342,10 +350,10 @@ To test the makefile build system with CUDA
 
 ```
 module load cuda
-HIPCC=nvcc CXX=g++ make
+HIP_PLATFORM=nvdia CXX=g++ make
 ```
 
-To create a cmake build system, we can copy a sample portable Makefile from `HPCTrainingExamples/HIP/saxpy/CMakeLists.txt` and modify it for this application.
+To create a cmake build system, we can copy a sample portable Makefile from `hip-training-series/HIP/saxpy/CMakeLists.txt` and modify it for this application.
 
 ```
 cmake_minimum_required(VERSION 3.21 FATAL_ERROR)

@@ -42,9 +42,9 @@ export CXX=${ROCM_PATH}/llvm/bin/clang++
 
 `cd hip-training-series/Lecture1/HIP/vectorAdd `
 
-Examine files here – README, Makefile, CMakeLists.txt and vectoradd.hip. Notice that the 
+Examine files here -- README, Makefile, CMakeLists.txt and vectoradd.hip. Notice that the 
 Makefile requires ROCM_PATH to be set. Check with module show rocm or echo $ROCM_PATH. Also, the 
-Makefile builds and runs the code. We’ll do the steps separately. Check also the HIPFLAGS 
+Makefile builds and runs the code. We'll do the steps separately. Check also the HIPFLAGS 
 in the Makefile. There is also a CMakeLists.txt file to use for a cmake build.
 
 For the portable Makefile system
@@ -203,8 +203,6 @@ Cleanup
 cd ..
 rm -rf build
 ```
-
-
 
 ### More advanced HIP makefile
 
