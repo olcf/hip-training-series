@@ -101,7 +101,7 @@ module load PrgEnv-amd
 module load amd
 module load cmake
 
-cd $HOME/hip-training-series/Lecture2/HIPIFY/mini-nbody
+cd $HOME/hip-training-series/Lecture2/HIPIFY/mini-nbody/cuda
 hipify-perl -print-stats nbody-orig.cu > nbody-orig.cpp
 hipcc -DSHMOO -I ../ nbody-orig.cpp -o nbody-orig
 srun ./nbody-orig
