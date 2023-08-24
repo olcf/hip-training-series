@@ -8,6 +8,29 @@ First, get the examples for this lecture
 git clone git@github.com:olcf/hip-training-series.git
 ```
 
+### Frontier instructions
+
+For the first interactive example, get an slurm interactive session on Frontier (see further below for NERSC Perlmutter):
+
+`salloc -N 1 -p batch --reservation=hip_training_2023_8_28 --gpus=1 -t 10:00 -A <project>`
+
+Outside the reservation window or if you're not on the reservation list, you can do:
+`salloc -N 1 -p batch --gpus=1 -t 10:00 -A <project>`
+
+Use your project id in the project field. If you do not remember it, run the command without
+the -A option and it should report your valid projects.
+
+### Perlumtter instructions
+
+During the training session node reservation hours, get a slurm interactive session with
+
+`salloc -N 1 -q shared -C gpu -c 32 -G 1 -t 30:00 -A ntrain8 --reservation=hip_aug28`
+
+Outside the reservation hours, use
+
+`salloc -N 1 -q interactive -C gpu -c 32 -G 1 -t 30:00 -A <a project>`
+
+use your own project instead of ntrain8 if you have a NERSC regular project.
 
 ### Exercise 1: Manual code conversion from CUDA to HIP (10 min)
 
