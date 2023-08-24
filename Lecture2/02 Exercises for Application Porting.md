@@ -102,7 +102,8 @@ Run the program
 srun ./nbody-orig
 ```
 
-A batch version of Exercise 2 is:
+A batch version of Exercise 2 for Frontier is given below. The batch scripts are also located in the 
+mini-nbody directory. Please check than and modify them for your project and the reservation.
 
 ```
 #!/bin/bash
