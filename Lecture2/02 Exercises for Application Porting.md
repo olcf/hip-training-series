@@ -20,6 +20,14 @@ Outside the reservation window or if you're not on the reservation list, you can
 Use your project id in the project field. If you do not remember it, run the command without
 the -A option and it should report your valid projects.
 
+The environment needs to be set up for the rocm software such as hipify-perl and hipcc. Here are the commands for Frontier.
+
+```
+module load PrgEnv-amd
+module load amd
+module load cmake
+```
+
 ### Perlumtter instructions
 
 During the training session node reservation hours, get a slurm interactive session with
@@ -31,6 +39,15 @@ Outside the reservation hours, use
 `salloc -N 1 -q interactive -C gpu -c 32 -G 1 -t 30:00 -A <a project>`
 
 use your own project instead of ntrain8 if you have a NERSC regular project.
+
+The modules needed for Perlmutter are slightly different than Frontier. Use these instead.
+
+```
+module load PrgEnv-gnu/8.3.3
+module load hip/5.4.3
+module load PrgEnv-nvidia/8.3.3
+module load cmake
+```
 
 ### Exercise 1: Manual code conversion from CUDA to HIP (10 min)
 
