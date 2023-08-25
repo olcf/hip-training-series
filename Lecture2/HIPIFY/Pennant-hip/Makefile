@@ -1,83 +1,28 @@
+EXECUTABLE = pennant
 BUILDDIR := build
-PRODUCT := pennant
+SRCDIR = src
+all: $(BUILDDIR)/$(EXECUTABLE)
 
-SRCDIR := src
+.PHONY: test
 
-HDRS := $(wildcard $(SRCDIR)/*.hh)
-SRCS := $(wildcard $(SRCDIR)/*.cc)
-OBJS := $(SRCS:$(SRCDIR)/%.cc=$(BUILDDIR)/%.o)
-DEPS := $(SRCS:$(SRCDIR)/%.cc=$(BUILDDIR)/%.d)
+OBJECTS =  $(BUILDDIR)/Driver.o $(BUILDDIR)/GenMesh.o $(BUILDDIR)/HydroBC.o
+OBJECTS += $(BUILDDIR)/ImportGMV.o $(BUILDDIR)/Mesh.o $(BUILDDIR)/PolyGas.o
+OBJECTS += $(BUILDDIR)/TTS.o $(BUILDDIR)/main.o $(BUILDDIR)/ExportGold.o
+OBJECTS += $(BUILDDIR)/Hydro.o $(BUILDDIR)/HydroGPU.o $(BUILDDIR)/InputFile.o
+OBJECTS += $(BUILDDIR)/Parallel.o $(BUILDDIR)/QCS.o $(BUILDDIR)/WriteXY.o
 
-HDRS += $(SRCDIR)/HydroGPU.hh
-SRCS += $(SRCDIR)/HydroGPU.cu
-OBJS += $(BUILDDIR)/HydroGPU.o
-DEPS += $(BUILDDIR)/HydroGPU.d
+CXXFLAGS = -g -O3 -DNDEBUG -fPIC
+HIPCC_FLAGS = -O3 -g -DNDEBUG
 
-BINARY := $(BUILDDIR)/$(PRODUCT)
+HIP_PLATFORM ?= amd
 
-CPPFLAGS := -I.
-
-# begin compiler-dependent flags
-#
-# gcc flags:
-#CXX := g++
-#CXXFLAGS_DEBUG := -g
-#CXXFLAGS_OPT := -O3
-#CXXFLAGS_OPENMP := -fopenmp
-
-# intel flags:
-CXX := amdclang++
-CXXFLAGS_DEBUG := -g
-CXXFLAGS_OPT := -O3 
-CXXFLAGS_OPENMP := -openmp
-
-# pgi flags:
-#CXX := pgCC
-#CXXFLAGS_DEBUG := -g
-#CXXFLAGS_OPT := -O3 -fastsse
-#CXXFLAGS_OPENMP := -mp
-
-# end compiler-dependent flags
-
-HIPC := hipcc
-HIPCFLAGS := 
-HIPCFLAGS_DEBUG := -G -lineinfo
-HIPCFLAGS_OPT := -O3
-
-LD := $(CXX)
-LDFLAGS_CUDA := -L$(HIP_INSTALL_PATH)/lib64 -lcudart
-LDFLAGS := -L${ROCM_PATH}/hip/lib -lamdhip64
-
-# select optimized or debug
-CXXFLAGS := $(CXXFLAGS_OPT) $(CPPFLAGS)
-HIPCFLAGS += $(HIPCFLAGS_OPT) $(CPPFLAGS)
-#CXXFLAGS := $(CXXFLAGS_DEBUG) $(CPPFLAGS)
-#HIPCFLAGS += $(HIPCFLAGS_DEBUG) $(CPPFLAGS)
-
-# add openmp flags (comment out for serial build)
-#CXXFLAGS += $(CXXFLAGS_OPENMP)
-#LDFLAGS += $(CXXFLAGS_OPENMP)
-
-all : $(BINARY)
-
--include $(DEPS)
-
-$(BINARY) : $(OBJS)
-	@echo linking $@
-	$(maketargetdir)
-	$(LD) -o $@ $^ $(LDFLAGS)
-
-$(BUILDDIR)/%.o : $(SRCDIR)/%.cc
-	@echo compiling $<
-	$(maketargetdir)
-	$(CXX) $(CXXFLAGS) $(CXXINCLUDES) -c -o $@ $<
-
-$(BUILDDIR)/%.o : $(SRCDIR)/%.hip
-	@echo compiling $<
-	$(maketargetdir)
-	@# unsetting of CPATH is needed to make hipcc and icpc
-	@# play nicely together
-	(CPATH=;$(HIPC) $(HIPCFLAGS) $(HIPCINCLUDES) -c -o $@ $<)
+ifeq ($(HIP_PLATFORM), nvidia)
+   HIP_PATH ?= $(shell hipconfig --path)
+   HIPCC_FLAGS += -x cu -I${HIP_PATH}/include/
+endif
+ifeq ($(HIP_PLATFORM), amd)
+   HIPCC_FLAGS += -x hip -munsafe-fp-atomics
+endif
 
 $(BUILDDIR)/%.d : $(SRCDIR)/%.cc
 	@echo making depends for $<
@@ -87,11 +32,29 @@ $(BUILDDIR)/%.d : $(SRCDIR)/%.cc
 $(BUILDDIR)/%.d : $(SRCDIR)/%.hip
 	@echo making depends for $<
 	$(maketargetdir)
-	@$(HIPC) $(HIPCFLAGS) $(HIPCINCLUDES) -M $< | sed "1s![^ \t]\+\.o!$(@:.d=.o) $@!" >$@
+	@hipcc $(HIPCCFLAGS) $(HIPCCINCLUDES) -M $< | sed "1s![^ \t]\+\.o!$(@:.d=.o) $@!" >$@
+
+$(BUILDDIR)/%.o : $(SRCDIR)/%.cc
+	@echo compiling $<
+	$(maketargetdir)
+	$(CXX) $(CXXFLAGS) $(CXXINCLUDES) -c -o $@ $<
+
+$(BUILDDIR)/%.o : $(SRCDIR)/%.hip
+	@echo compiling $<
+	$(maketargetdir)
+	hipcc $(HIPCC_FLAGS) -c $^ -o $@
+
+$(BUILDDIR)/$(EXECUTABLE) : $(OBJECTS)
+	@echo linking $@
+	$(maketargetdir)
+	hipcc $(OBJECTS) $(LDFLAGS) -o $@
+
+test : $(BUILDDIR)/$(EXECUTABLE)
+	$(BUILDDIR)/$(EXECUTABLE) test/sedovbig/sedovbig.pnt
 
 define maketargetdir
 	-@mkdir -p $(dir $@) > /dev/null 2>&1
 endef
 
 clean :
-	rm -f $(BINARY) $(OBJS) $(DEPS)
+	rm -rf $(BUILDDIR)
