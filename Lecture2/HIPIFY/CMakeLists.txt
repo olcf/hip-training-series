@@ -1,23 +1,3 @@
-```
-
-To test the makefile,
-
-```
-make build/pennant
-make test
-```
-or just `make` to both build and run the test
-
-To test the makefile build system with CUDA
-
-```
-module load cuda
-HIP_PLATFORM=nvdia CXX=g++ make
-```
-
-To create a cmake build system, we can copy a sample portable Makefile from `hip-training-series/HIP/saxpy/CMakeLists.txt` and modify it for this application.
-
-```
 cmake_minimum_required(VERSION 3.21 FATAL_ERROR)
 project(Pennant LANGUAGES CXX)
 include(CTest)
