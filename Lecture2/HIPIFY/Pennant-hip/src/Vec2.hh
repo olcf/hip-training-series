@@ -19,7 +19,7 @@
 #include <ostream>
 
 
-#ifdef __HIPCC__
+#if defined(__HIPCC__) || defined(__CUDACC__)
 #define FNQUALIFIERS __host__ __device__
 #else
 #define FNQUALIFIERS
@@ -30,7 +30,7 @@
 // Only the functions involving strings and I/O are
 // out-of-line.
 
-#ifndef __HIPCC__
+#if !defined(__HIPCC__) && !defined(__CUDACC__)
 // we are not in CUDA, so need to define our own double2 struct
 struct double2
 {
