@@ -98,7 +98,7 @@ hipcc -DSHMOO -I ../ nbody-orig.cpp -o nbody-orig`
 
 The `#define SHMOO` fixes some timer printouts. Add `--offload-arch=<gpu_type>` to specify the GPU type and avoid the autodetection issues when running on a single GPU on a node.
 
-* Fix any compiler issues, for example, if there was something that didn’t hipify correctly.
+* Fix any compiler issues, for example, if there was something that didn't hipify correctly.
 * Be on the lookout for hard-coded Nvidia specific things like warp sizes and PTX.
 
 Run the program
@@ -118,7 +118,7 @@ mini-nbody directory. Please check than and modify them for your project and the
 #SBATCH -p batch
 #SBATCH -t 00:10:00
 #SBATCH -A <project id>
-####SBATCH --reservation=<reservation_name>
+#SBATCH --reservation hip_training_2023_8_28
 
 module load PrgEnv-amd
 module load amd
@@ -141,8 +141,8 @@ For Perlmutter, there are a few differences in the batch arguments as well as th
 #SBATCH -c 32
 #SBATCH -G 1
 #SBATCH -t 00:30:00
-#SBATCH -A <project id>
-####SBATCH ---reservation <reservation_name>
+#SBATCH -A ntrain8
+#SBATCH --reservation hip_aug28
 
 module load PrgEnv-gnu/8.3.3
 module load hip/5.4.3
@@ -166,20 +166,25 @@ Notes:
 
 ### Mini-App conversion example
 
-Load the proper environment
+Load the proper environment. For Frontier, the 5.5.1 version is needed to get the right interfaces.
 
 ```
 module load PrgEnv-amd
-module load amd
+module load amd/5.5.1
+module load cmake
+export CXX=${ROCM_PATH}/llvm/bin/clang++
 ```
 
-Get the CUDA version of the Pennant mini-app.
+The original CUDA version of Pennant has been downloaded and installed
+at ~/hip-training-series/Lecture2/HIPIFY/Pennant-orig. Only one of the
+test problems has been included to save disk space. The original source is at
 
 ```
-wget https://asc.llnl.gov/sites/asc/files/2020-09/pennant-singlenode-cude.tgz
-tar -xzvf pennant-singlenode-cude.tgz
+https://asc.llnl.gov/sites/asc/files/2020-09/pennant-singlenode-cude.tgz
+```
 
-cd PENNANT
+```
+cd ~/hip-training-series/Lecture2/HIPIFY/Pennant-orig
 
 ./hipexamine-perl.sh
 ```
@@ -214,10 +219,13 @@ First cut at converting the Makefile. Testing with `make` can help identify the 
 	`sed -i -e 's/nvcc/hipcc/' Makefile`
 * Remove `-fast` and `-fno-alias`
         `sed -i -e 's/-fast -fno-alias//' Makefile`
-* Change all `.cu` to `.hip` in the Makefile
-	`sed -i -e 's/.cu/.hip/g' Makefile`
-* Remove -arch=sm_21 --ptxas-options=-v//
+* Change all `%.cu` to `%.hip` in the Makefile
+	`sed -i -e 's/%.cu/%.hip/g' Makefile`
+* Remove -arch=sm_21 --ptxas-options=-v
 	`sed -i -e 's/-arch=sm_21 --ptxas-options=-v//' Makefile`
+* Change the LDFLAGS to those needed for AMD
+	`sed -i -e 's/^LDFLAGS/LDFLAGS_CUDA/' Makefile`
+	`sed -i -e '/^LDFLAGS_CUDA/aLDFLAGS := -L${ROCM_PATH}/hip/lib -lamdhip64' Makefile`
 
 This new makefile has a separate compile path for .hip and .cpp files. The .hip files are compiled with hipcc
 and the .cpp files are compiled with amdclang++. There are different strategies that can be used. A simpler 
@@ -315,20 +323,6 @@ We finally got through the compiler errors and move on to link errors
 
 ```
 linking build/pennant
-/opt/rocm-5.6.0//llvm/bin/clang++ -o build/pennant build/ExportGold.o build/ImportGMV.o build/Parallel.o build/WriteXY.o build/HydroBC.o build/QCS.o build/TTS.o build/main.o build/Mesh.o build/InputFile.o build/GenMesh.o build/Driver.o build/Hydro.o build/PolyGas.o build/HydroGPU.o -L/lib64 -lcudart
-ld.lld: error: unable to find library -lcudart
-```
-
-In the Makefile, change the LDFLAGS while keeping the old settings for when we set up the switch between GPU platforms.
-
-```
-LDFLAGS_CUDA := -L$(HIP_INSTALL_PATH)/lib64 -lcudart
-LDFLAGS := -L${ROCM_PATH}/hip/lib -lamdhip64
-```
-We then get the link error
-
-```
-linking build/pennant
 /opt/rocm-5.6.0//llvm/bin/clang++ -o build/pennant build/ExportGold.o build/ImportGMV.o build/Parallel.o build/WriteXY.o build/HydroBC.o build/QCS.o build/TTS.o build/main.o build/Mesh.o build/InputFile.o build/GenMesh.o build/Driver.o build/Hydro.o build/PolyGas.o build/HydroGPU.o -L/opt/rocm-5.6.0//hip/lib -lamdhip64
 ld.lld: error: undefined symbol: hydroInit(int, int, int, int, int, double, double, double, double, double, double, double, double, double, int, double const*, int, double const*, double2 const*, double2 const*, double const*, double const*, double const*, double const*, double const*, double const*, double const*, int const*, int const*, int const*, int const*, int const*, int const*)
 >>> referenced by Hydro.cc
@@ -351,16 +345,23 @@ nm build/HydroGPU.o |grep hydroGetData
 In HydroGPU.hh
 
 * Change line 38 and 39 to from `const double2*` to `const void*`
+	`sed -i -e '38,39s/const double2/const void/' src/HydroGPU.hh`
 * Change line 62 from `double2*` to `void*`
+	`sed -i -e '62,62s/double2/void/' src/HydroGPU.hh`
 
 In HydroGPU.hip
 
 * Change line 1031 and 1032 to `const void*`
+	`sed -i -e '1031,1032s/const double2/const void/' src/HydroGPU.hip`
 * Change line 1284 to `const void*`
+	`sed -i -e '1284,1284s/double2/void/' src/HydroGPU.hip`
 
 In Hydro.cc
 
 * Add `(void *)` before the arguments on lines 59, 60, and 145
+	`sed -i -e '59,59s/mesh/(void *)mesh/' src/Hydro.cc`
+	`sed -i -e '60,60s/pu/(void *)pu/' src/Hydro.cc`
+	`sed -i -e '145,145s/mesh/(void *)mesh/' src/Hydro.cc`
 
 Now it compiles and we can test the run with
 
@@ -377,7 +378,7 @@ We can copy a sample portable Makefile from `hip-training-series/Lecture1/HIP/sa
 EXECUTABLE = pennant
 BUILDDIR := build
 SRCDIR = src
-all: $(BUILDDIR)/$(EXECUTABLE) test
+all: $(BUILDDIR)/$(EXECUTABLE)
 
 .PHONY: test
 
@@ -439,12 +440,13 @@ clean :
 To test the makefile,
 
 ```
-make build/pennant
+make
 make test
 ```
-or just `make` to both build and run the test
 
-To test the makefile build system with CUDA
+To test the makefile build system with CUDA. Instructions for the Perlmutter system have not been developed yet. Also, the
+pennant run on Frontier does seem to hang at the end of the run. The instructions for Frontier are included in a file
+at `~/hip-training-series/Lecture2/HIPIFY/frontier_pennant_setup.sh`.
 
 ```
 module load cuda
@@ -523,7 +525,7 @@ cmake ..
 make VERBOSE=1
 ctest
 ```
-Now testing for CUDA
+Now testing for CUDA. The specific instructions for Perlmutter have not been determined.
 
 
 ```
