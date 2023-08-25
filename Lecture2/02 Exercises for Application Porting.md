@@ -204,13 +204,29 @@ Now we have two options to convert the build system to work with both ROCm and C
 
 First cut at converting the Makefile. Testing with `make` can help identify the next step.
 
+* Change CUDACFLAGS to HIPCFLAGS
+	`sed -i -e 's/CUDACFLAGS/HIPCFLAGS/g' Makefile`
 * Change all occurances of CUDA to HIP
-* Change the CXX variable to `clang++` located in `${ROCM_PATH}/llvm/bin/clang++`
-* Change all the HIPC variables to HIPCC
-* Change HIPCC to point to hipcc
-* Change HIPCCFLAGS with CUDA options to HIPCCFLAGS\_CUDA
-* Remove `-fast` and `-fno-alias` from the CXXFLAGS\_OPT
+	`sed -i -e 's/CUDA/HIP/g' Makefile`
+* Change the CXX variable `icpc` to `clang++` located in `${ROCM_PATH}/llvm/bin/clang++`
+	`sed -i -e '/CXX/s/icpc/amdclang++/' Makefile`
+* Change HIPCC from nvcc to hipcc
+	`sed -i -e 's/nvcc/hipcc/' Makefile`
+* Remove `-fast` and `-fno-alias`
+        `sed -i -e 's/-fast -fno-alias//' Makefile`
 * Change all `.cu` to `.hip` in the Makefile
+	`sed -i -e 's/.cu/.hip/g' Makefile`
+* Remove -arch=sm_21 --ptxas-options=-v//
+	`sed -i -e 's/-arch=sm_21 --ptxas-options=-v//' Makefile`
+
+This new makefile has a separate compile path for .hip and .cpp files. The .hip files are compiled with hipcc
+and the .cpp files are compiled with amdclang++. There are different strategies that can be used. A simpler 
+approach is to just compile everything with hipcc. There are some limitations with using hipcc everywhere. One
+of them is that hipcc cannot be used to compile OpenMP code in a .cpp file. That may limit hybrid GPU programming
+approaches.
+
+The resulting makefile is included as `Makefile.twopath` and the all hipcc approach is in `Makefile.allhipcc`. The makefile supports
+this just by defining CXX to hipcc.
 
 Now we are just getting compile errors from the source files. We will have to do fixes there. We'll tackle them one-by-one.
 
@@ -234,9 +250,11 @@ __MAKE_VECTOR_TYPE__(double, double);
 double2
 ```
 
-HIP defines double2. Let's look at Vec2.hh. At line 33 where the first error occurs. We see an `#ifdef __CUDACC__` around a block of code there. We also need the #ifdef to include HIP as well. Let's check the available compiler defines from the presentation to see what is available. It looks like we can use `__HIP_DEVICE_COMPILE__` or maybe `__HIPCC__`.
+HIP defines double2. Let's look at Vec2.hh. At line 33 where the first error occurs. We see an `#ifndef __CUDACC__` around a block of code there. We also need the #ifdef to include HIP as well. Let's check the available compiler defines from the presentation to see what is available. It looks like we can use `__HIP_DEVICE_COMPILE__` or maybe `__HIPCC__`.
 
-Change line 33 in Vec2.hh to #ifndef `__HIPCC__`
+* Change line 33 in Vec2.hh to #ifndef `__HIPCC__`
+
+	`sed -e -i 's/#ifndef __CUDACC__/#ifndef __HIPCC__/' src/Vec2.hh`
 
 The next error is about function attributes that are incorrect for device code. 
 
@@ -249,9 +267,11 @@ src/HydroGPU.hip:168:23: error: no matching function for call to 'cross
                       ^~~~
 src/Vec2.hh:206:15: note: candidate function not viable: call to __host__ function from __device__ function
 ```
-The FNQUALIFIER macro is what handles the attributes in the code. We find that defined at line 22 and again we see a `#ifdef __CUDACC__`. It is another `#ifdef __CUDACC__`. We can see that we need to pay attention to all the CUDA ifdef statements.
+The FNQUALIFIER macro is what handles the attributes in the code. We find that defined at line 22 and again we see a `#ifdef __CUDACC__`. It is another ifdef for `__CUDACC__`. We can see that we need to pay attention to all the CUDA ifdef statements.
 
-Change line 22 to `#ifdef __HIPCC__`
+* Change line 22 to `#ifdef __HIPCC__`
+
+	`sed -e -i 's/#ifdef __CUDACC__/#ifdef __HIPCC__/' src/Vec2.hh`
 
 
 Finally we get an error about already defined operators on double2 types. These appear to be defined in HIP, but not in CUDA. So we change line 84
@@ -269,7 +289,9 @@ src/Vec2.hh:88:17: note: candidate function
 inline double2& operator+=(double2& v, const double2& v2)
 ```
 
-Change line 85 to `#elif defined(__CUDACC__)`
+* Change line 85 to `#elif defined(__CUDACC__)`
+
+	`sed -i -e '85,85s/#else/#elif defined(__CUDACC__)/' src/Vec2.hh`
 
 Now we start getting errors for HydroGPU.hip. The first is for the atomicMin function. It is already defined in HIP, so we need to add an ifdef for CUDA around the code.
 
@@ -285,7 +307,9 @@ double atomicMin(double* addr, double val) {                                    
 1 error generated when compiling for gfx90a.
 ```
 
-Add `#ifndef __CUDACC__/endif` to the block of code in `HydroGPU.hip` from line 725 to 737
+* Add `#ifndef __CUDACC__/endif` to the block of code in `HydroGPU.hip` from line 725 to 737
+
+	`sed -i -e '724,724a#ifdef __CUDACC__' -e '738,738a#endif' src/HydroGPU.hip`
 
 We finally got through the compiler errors and move on to link errors
 
