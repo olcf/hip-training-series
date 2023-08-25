@@ -103,7 +103,7 @@ srun ./nbody-orig
 ```
 
 A batch version of Exercise 2 for Frontier is given below. The batch scripts are also located in the 
-mini-nbody directory. Please check than and modify them for your project and the reservation.
+mini-nbody directory. Please check than and modify them for your project and the reservation if there is one.
 
 ```
 #!/bin/bash
@@ -111,13 +111,33 @@ mini-nbody directory. Please check than and modify them for your project and the
 #SBATCH --ntasks=1
 #SBATCH --gpus=1
 #SBATCH -p batch
-#SBATCH -A <project id>
-#SBATCH --reservation=<reservation_name>
 #SBATCH -t 00:10:00
+#SBATCH -A <project id>
+####SBATCH --reservation=<reservation_name>
 
 module load PrgEnv-amd
 module load amd
 module load cmake
+
+cd $HOME/hip-training-series/Lecture2/HIPIFY/mini-nbody/cuda
+hipify-perl -print-stats nbody-orig.cu > nbody-orig.cpp
+hipcc -DSHMOO -I ../ nbody-orig.cpp -o nbody-orig
+srun ./nbody-orig
+cd ../../..
+```
+
+For Perlmutter, there are a few differences in the batch arguments as well as the modules to be loaded.
+
+```
+#!/bin/bash
+#SBATCH -N 1
+#SBATCH -q shared
+#SBATCH -C gpu
+#SBATCH -c 32
+#SBATCH -G 1
+#SBATCH -t 00:30:00
+#SBATCH -A <project id>
+####SBATCH ---reservation <reservation_name>
 
 cd $HOME/hip-training-series/Lecture2/HIPIFY/mini-nbody/cuda
 hipify-perl -print-stats nbody-orig.cu > nbody-orig.cpp
