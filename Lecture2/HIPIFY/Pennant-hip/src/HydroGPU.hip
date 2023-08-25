@@ -722,7 +722,7 @@ static __device__ void hydroCalcDtVolume(
 }
 
 
-#ifdef __CUDACC__
+#if !defined(__CUDACC__) && !defined(__HIPCC__)
 static __device__ double atomicMin(double* address, double val)
 {
     unsigned long long int* address_as_ull =
