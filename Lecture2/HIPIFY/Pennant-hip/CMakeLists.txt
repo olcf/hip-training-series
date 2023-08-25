@@ -51,6 +51,7 @@ if (${GPU_RUNTIME} MATCHES "HIP")
    set(HIPCC_FLAGS "${ROCMCC_FLAGS}")
 else (${GPU_RUNTIME} MATCHES "HIP")
    set(HIPCC_FLAGS "${CUDACC_FLAGS}")
+   include_directories($ENV{HIP_PATH}/hip/include)
 endif (${GPU_RUNTIME} MATCHES "HIP")
 
 set_source_files_properties(${PENNANT_HIP_SRCS} PROPERTIES LANGUAGE ${GPU_RUNTIME})
