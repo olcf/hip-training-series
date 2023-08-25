@@ -41,12 +41,15 @@ Outside the reservation hours, use
 use your own project instead of ntrain8 if you have a NERSC regular project.
 
 The modules needed for Perlmutter are slightly different than Frontier. Use these instead.
+We also need to add the path to the bin directory.
 
 ```
 module load PrgEnv-gnu/8.3.3
 module load hip/5.4.3
 module load PrgEnv-nvidia/8.3.3
 module load cmake
+
+export PATH=${PATH}:${HIP_PATH}
 ```
 
 ### Exercise 1: Manual code conversion from CUDA to HIP (10 min)
@@ -78,7 +81,9 @@ You'll see the statistics of HIP APIs that will be generated. The output might b
   cudaMemcpyHostToDevice => hipMemcpyHostToDevice: 1
 ```
 
-`hipify-perl` is in `$ROCM_PATH/hip/bin` directory and should be in your path. In some versions of ROCm, the script is called `hipify-perl`.
+`hipify-perl` is in `$ROCM_PATH/hip/bin` directory and should be in your path. In some versions of ROCm, the script is called `hipify-perl.sh`. Perlmutter does not
+currently have the hipify scripts in the `$ROCM_PATH/hip/bin` directory. We have included them in the `hip-training-series/Lecture2/HIPIFY` directory for these
+exercises.
 
 Now let's actually do the conversion.
 ```
@@ -139,11 +144,19 @@ For Perlmutter, there are a few differences in the batch arguments as well as th
 #SBATCH -A <project id>
 ####SBATCH ---reservation <reservation_name>
 
+module load PrgEnv-gnu/8.3.3
+module load hip/5.4.3
+module load PrgEnv-nvidia/8.3.3
+module load cmake
+
+export PATH=${PATH}:${HIP_PATH}
+
 cd $HOME/hip-training-series/Lecture2/HIPIFY/mini-nbody/cuda
-hipify-perl -print-stats nbody-orig.cu > nbody-orig.cpp
+
+../../hipify-perl -print-stats nbody-orig.cu > nbody-orig.cpp
 hipcc -DSHMOO -I ../ nbody-orig.cpp -o nbody-orig
 srun ./nbody-orig
-cd ../../..
+rm nbody-orig nbody-orig.cpp
 ```
 
 Notes:
