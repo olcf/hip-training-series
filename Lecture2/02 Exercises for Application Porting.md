@@ -93,7 +93,7 @@ hipify-perl nbody-orig.cu > nbody-orig.cpp
 Compile the HIP programs.
 
 ```
-hipcc -DSHMOO -I ../ nbody-orig.cpp -o nbody-orig`
+hipcc -DSHMOO -I ../ nbody-orig.cpp -o nbody-orig
 ```
 
 The `#define SHMOO` fixes some timer printouts. Add `--offload-arch=<gpu_type>` to specify the GPU type and avoid the autodetection issues when running on a single GPU on a node.
@@ -164,7 +164,7 @@ Notes:
 * Hipify tools do not check correctness
 * `hipconvertinplace-perl` is a convenience script that does `hipify-perl -inplace -print-stats` command
 
-### Mini-App conversion example
+### Exercise 3: Mini-App conversion example
 
 Load the proper environment. For Frontier, the 5.5.1 version is needed to get the right interfaces.
 
