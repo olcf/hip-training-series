@@ -3,9 +3,9 @@
 #SBATCH --ntasks=1
 #SBATCH --gpus=1
 #SBATCH -p batch
-#SBATCH -A <project id>
 #SBATCH -t 00:10:00
-#####SBATCH --reservation hip_training_2023_8_28
+#SBATCH -A <project id>
+#####SBATCH --reservation <reservation_name>
 
 module load PrgEnv-amd
 module load amd
