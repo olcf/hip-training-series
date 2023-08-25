@@ -1,7 +1,7 @@
 EXECUTABLE = pennant
 BUILDDIR := build
 SRCDIR = src
-all: $(BUILDDIR)/$(EXECUTABLE) test
+all: $(BUILDDIR)/$(EXECUTABLE)
 
 .PHONY: test
 
