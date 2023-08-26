@@ -174,6 +174,15 @@ module load amd/5.5.1
 module load cmake
 export CXX=${ROCM_PATH}/llvm/bin/clang++
 ```
+For Perlmutter, the following environment should be set up.
+
+```
+module load PrgEnv-gnu/8.3.3
+module load hip/5.4.3
+module load PrgEnv-nvidia/8.3.3
+module load cmake
+export PATH=${PATH}:${HIP_PATH}
+```
 
 The original CUDA version of Pennant has been downloaded and installed
 at ~/hip-training-series/Lecture2/HIPIFY/Pennant-orig. Only one of the
@@ -444,7 +453,7 @@ make
 make test
 ```
 
-To test the makefile build system with CUDA. Instructions for the Perlmutter system have not been developed yet. Also, the
+To test the makefile build system with CUDA. The
 pennant run on Frontier does seem to hang at the end of the run. The instructions for Frontier are included in a file
 at `~/hip-training-series/Lecture2/HIPIFY/frontier_pennant_setup.sh`.
 
@@ -525,7 +534,7 @@ cmake ..
 make VERBOSE=1
 ctest
 ```
-Now testing for CUDA. The specific instructions for Perlmutter have not been determined.
+Now testing for CUDA.
 
 
 ```
@@ -535,4 +544,28 @@ mkdir build && cd build
 cmake -DCMAKE_GPU_RUNTIME=CUDA ..
 make VERBOSE=1
 ctest
+```
+
+For Perlmutter, make sure the right modules are loaded and it is very much the same.
+
+```
+module load PrgEnv-gnu/8.3.3
+module load hip/5.4.3
+module load PrgEnv-nvidia/8.3.3
+module load cmake
+export PATH=${PATH}:${HIP_PATH}
+
+make
+
+build/pennant test/sedovbig/sedovbig.pnt
+
+make clean
+
+mkdir build && cd build
+
+cmake -DCMAKE_GPU_RUNTIME=CUDA ..
+
+make VERBOSE=1
+
+./pennant ../test/sedovbig/sedovbig.pnt
 ```
