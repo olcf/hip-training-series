@@ -22,8 +22,8 @@ sed -i -e 's/-arch=sm_21 --ptxas-options=-v//' Makefile
 sed -i -e 's/^LDFLAGS/LDFLAGS_CUDA/' Makefile
 sed -i -e '/^LDFLAGS_CUDA/aLDFLAGS := -L${ROCM_PATH}/hip/lib -lamdhip64' Makefile
 
-sed -i -e 's/#ifndef __CUDACC__/#ifndef __HIPCC__/' src/Vec2.hh
-sed -i -e 's/#ifdef __CUDACC__/#ifdef __HIPCC__/' src/Vec2.hh
+sed -i -e 's/#ifndef __CUDACC__/#if !defined(__HIPCC__) && !defined(__CUDACC__)/' src/Vec2.hh
+sed -i -e 's/#ifdef __CUDACC__/#if defined(__HIPCC__) || defined(__CUDACC__)/' src/Vec2.hh
 sed -i -e '85,85s/#else/#elif defined\(__CUDACC__\)/' src/Vec2.hh
 
 sed -i -e '724,724a#ifdef __CUDACC__' -e '738,738a#endif' src/HydroGPU.hip
