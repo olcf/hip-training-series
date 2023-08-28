@@ -324,7 +324,7 @@ double atomicMin(double* addr, double val) {                                    
 1 error generated when compiling for gfx90a.
 ```
 
-* Add `#ifndef __CUDACC__/endif` to the block of code in `HydroGPU.hip` from line 725 to 737
+* Add `#ifdef __CUDACC__/endif` to the block of code in `HydroGPU.hip` from line 725 to 737
 
 	`sed -i -e '724,724a#ifdef __CUDACC__' -e '738,738a#endif' src/HydroGPU.hip`
 
