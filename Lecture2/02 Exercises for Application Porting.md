@@ -362,8 +362,8 @@ In HydroGPU.hip
 
 * Change line 1031 and 1032 to `const void*`
 	`sed -i -e '1031,1032s/const double2/const void/' src/HydroGPU.hip`
-* Change line 1284 to `const void*`
-	`sed -i -e '1284,1284s/double2/void/' src/HydroGPU.hip`
+* Change line 1283 to `const void*`
+	`sed -i -e '1283,1283s/double2/void/' src/HydroGPU.hip`
 
 In Hydro.cc
 
