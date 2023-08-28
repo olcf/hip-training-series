@@ -454,7 +454,8 @@ make test
 ```
 
 To test the makefile build system with CUDA. The
-pennant run on Frontier does seem to hang at the end of the run. The instructions for Frontier are included in a file
+pennant run on Frontier does seem to hang at the end of the run if you build and run it from your home directory
+(it complete without hang if you build and run it from the Orion file system) . The instructions for Frontier are included in a file
 at `~/hip-training-series/Lecture2/HIPIFY/frontier_pennant_setup.sh`.
 
 ```
