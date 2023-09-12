@@ -192,18 +192,23 @@ test problems has been included to save disk space. The original source is at
 https://asc.llnl.gov/sites/asc/files/2020-09/pennant-singlenode-cude.tgz
 ```
 
+(For your reference, the fully hipified version of this exercise with a Makefile portable between
+Frontier and Perlmutter can be found in hip-training-series/Lecture2/HIPIFY/Pennant-hip).
+
+
+Let's start by examining how much CUDA to HIP conversion will be done. 
 ```
 cd ~/hip-training-series/Lecture2/HIPIFY/Pennant-orig
 
-./hipexamine-perl.sh
+../hipexamine-perl.sh
 ```
 
-And review the output
+And review the output.
 
-Now do the actual conversion. We want to do the conversion for the whole directory tree, so we'll use hipconvertinplace-sh
+Now do the actual conversion. We want to do the conversion for the whole directory tree, so we'll use `hipconvertinplace.sh`
 
 ```
-./hipconvertinplace-perl.sh
+../hipconvertinplace-perl.sh
 ```
 
 We want to use `.hip` extensions rather than `.cu`, so change all files with `.cu` to `.hip`
@@ -219,22 +224,22 @@ Now we have two options to convert the build system to work with both ROCm and C
 First cut at converting the Makefile. Testing with `make` can help identify the next step.
 
 * Change CUDACFLAGS to HIPCFLAGS
-	`sed -i -e 's/CUDACFLAGS/HIPCFLAGS/g' Makefile`
+	- `sed -i -e 's/CUDACFLAGS/HIPCFLAGS/g' Makefile`
 * Change all occurances of CUDA to HIP
-	`sed -i -e 's/CUDA/HIP/g' Makefile`
+	- `sed -i -e 's/CUDA/HIP/g' Makefile`
 * Change the CXX variable `icpc` to `clang++` located in `${ROCM_PATH}/llvm/bin/clang++`
-	`sed -i -e '/CXX/s/icpc/amdclang++/' Makefile`
+	- `sed -i -e '/CXX/s/icpc/amdclang++/' Makefile`
 * Change HIPCC from nvcc to hipcc
-	`sed -i -e 's/nvcc/hipcc/' Makefile`
+	- `sed -i -e 's/nvcc/hipcc/' Makefile`
 * Remove `-fast` and `-fno-alias`
-        `sed -i -e 's/-fast -fno-alias//' Makefile`
+        - `sed -i -e 's/-fast -fno-alias//' Makefile`
 * Change all `%.cu` to `%.hip` in the Makefile
-	`sed -i -e 's/%.cu/%.hip/g' Makefile`
-* Remove -arch=sm_21 --ptxas-options=-v
-	`sed -i -e 's/-arch=sm_21 --ptxas-options=-v//' Makefile`
+	- `sed -i -e 's/%.cu/%.hip/g' Makefile`
+* Remove `-arch=sm_21 --ptxas-options=-v`
+	- `sed -i -e 's/-arch=sm_21 --ptxas-options=-v//' Makefile`
 * Change the LDFLAGS to those needed for AMD
-	`sed -i -e 's/^LDFLAGS/LDFLAGS_CUDA/' Makefile`
-	`sed -i -e '/^LDFLAGS_CUDA/aLDFLAGS := -L${ROCM_PATH}/hip/lib -lamdhip64' Makefile`
+	- `sed -i -e 's/^LDFLAGS/LDFLAGS_CUDA/' Makefile`
+	- `sed -i -e '/^LDFLAGS_CUDA/aLDFLAGS := -L${ROCM_PATH}/hip/lib -lamdhip64' Makefile`
 
 This new makefile has a separate compile path for .hip and .cpp files. The .hip files are compiled with hipcc
 and the .cpp files are compiled with amdclang++. There are different strategies that can be used. A simpler 
@@ -271,7 +276,7 @@ HIP defines double2. Let's look at Vec2.hh. At line 33 where the first error occ
 
 * Change line 33 in Vec2.hh to #ifndef `__HIPCC__`
 
-	`sed -e -i 's/#ifndef __CUDACC__/#ifndef __HIPCC__/' src/Vec2.hh`
+	- `sed -i -e 's/#ifndef __CUDACC__/#if !defined(__HIPCC__) \&\& !defined(__CUDACC__)/' src/Vec2.hh`
 
 The next error is about function attributes that are incorrect for device code. 
 
@@ -288,7 +293,7 @@ The FNQUALIFIER macro is what handles the attributes in the code. We find that d
 
 * Change line 22 to `#ifdef __HIPCC__`
 
-	`sed -e -i 's/#ifdef __CUDACC__/#ifdef __HIPCC__/' src/Vec2.hh`
+	- `sed -i -e 's/#ifdef __CUDACC__/#if defined(__HIPCC__) \|\| defined(__CUDACC__)/' src/Vec2.hh`
 
 
 Finally we get an error about already defined operators on double2 types. These appear to be defined in HIP, but not in CUDA. So we change line 84
@@ -308,7 +313,7 @@ inline double2& operator+=(double2& v, const double2& v2)
 
 * Change line 85 to `#elif defined(__CUDACC__)`
 
-	`sed -i -e '85,85s/#else/#elif defined(__CUDACC__)/' src/Vec2.hh`
+	- `sed -i -e '85,85s/#else/#elif defined(__CUDACC__)/' src/Vec2.hh`
 
 Now we start getting errors for HydroGPU.hip. The first is for the atomicMin function. It is already defined in HIP, so we need to add an ifdef for CUDA around the code.
 
@@ -326,7 +331,7 @@ double atomicMin(double* addr, double val) {                                    
 
 * Add `#ifdef __CUDACC__/endif` to the block of code in `HydroGPU.hip` from line 725 to 737
 
-	`sed -i -e '724,724a#ifdef __CUDACC__' -e '738,738a#endif' src/HydroGPU.hip`
+	- `sed -i -e '724,724a#ifdef __CUDACC__' -e '738,738a#endif' src/HydroGPU.hip`
 
 We finally got through the compiler errors and move on to link errors
 
@@ -354,23 +359,23 @@ nm build/HydroGPU.o |grep hydroGetData
 In HydroGPU.hh
 
 * Change line 38 and 39 to from `const double2*` to `const void*`
-	`sed -i -e '38,39s/const double2/const void/' src/HydroGPU.hh`
+	- `sed -i -e '38,39s/const double2/const void/' src/HydroGPU.hh`
 * Change line 62 from `double2*` to `void*`
-	`sed -i -e '62,62s/double2/void/' src/HydroGPU.hh`
+	- `sed -i -e '62,62s/double2/void/' src/HydroGPU.hh`
 
 In HydroGPU.hip
 
 * Change line 1031 and 1032 to `const void*`
-	`sed -i -e '1031,1032s/const double2/const void/' src/HydroGPU.hip`
+	- `sed -i -e '1031,1032s/const double2/const void/' src/HydroGPU.hip`
 * Change line 1283 to `const void*`
-	`sed -i -e '1283,1283s/double2/void/' src/HydroGPU.hip`
+	- `sed -i -e '1283,1283s/double2/void/' src/HydroGPU.hip`
 
 In Hydro.cc
 
 * Add `(void *)` before the arguments on lines 59, 60, and 145
-	`sed -i -e '59,59s/mesh/(void *)mesh/' src/Hydro.cc`
-	`sed -i -e '60,60s/pu/(void *)pu/' src/Hydro.cc`
-	`sed -i -e '145,145s/mesh/(void *)mesh/' src/Hydro.cc`
+	- `sed -i -e '59,59s/mesh/(void *)mesh/' src/Hydro.cc`
+	- `sed -i -e '60,60s/pu/(void *)pu/' src/Hydro.cc`
+	- `sed -i -e '145,145s/mesh/(void *)mesh/' src/Hydro.cc`
 
 Now it compiles and we can test the run with
 
@@ -526,6 +531,8 @@ set_source_files_properties(HydroGPU.hip PROPERTIES COMPILE_FLAGS ${HIPCC_FLAGS}
 
 install(TARGETS pennant)
 ```
+
+The above CMakeLists.txt can be found in hip-training-series/Lecture2/HIPIFY/CMakeLists.txt
 
 To test the cmake build system, do the following
 
