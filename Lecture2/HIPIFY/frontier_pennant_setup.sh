@@ -1,13 +1,16 @@
 #!/bin/sh
+
+# Run this script from <path to hip-training-series repo>/Lecture2/HIPIFY directory
+
 module load PrgEnv-amd
 module load amd/5.5.1
 module load cmake
 export CXX=${ROCM_PATH}/llvm/bin/clang++
 
-rm -rf ~/hip-training-series/Lecture2/HIPIFY/Pennant-new
-mkdir ~/hip-training-series/Lecture2/HIPIFY/Pennant-new
-cp -r ~/hip-training-series/Lecture2/HIPIFY/Pennant-orig/* ~/hip-training-series/Lecture2/HIPIFY/Pennant-new
-cd  ~/hip-training-series/Lecture2/HIPIFY/Pennant-new
+rm -rf ./Pennant-new
+mkdir ./Pennant-new
+cp -r ./Pennant-orig/* ./Pennant-new
+cd  ./Pennant-new
 ../hipconvertinplace-perl.sh .
 rm -f src/*.prehip
 mv src/HydroGPU.cu src/HydroGPU.hip
@@ -22,8 +25,8 @@ sed -i -e 's/-arch=sm_21 --ptxas-options=-v//' Makefile
 sed -i -e 's/^LDFLAGS/LDFLAGS_CUDA/' Makefile
 sed -i -e '/^LDFLAGS_CUDA/aLDFLAGS := -L${ROCM_PATH}/hip/lib -lamdhip64' Makefile
 
-sed -i -e 's/#ifndef __CUDACC__/#if !defined(__HIPCC__) && !defined(__CUDACC__)/' src/Vec2.hh
-sed -i -e 's/#ifdef __CUDACC__/#if defined(__HIPCC__) || defined(__CUDACC__)/' src/Vec2.hh
+sed -i -e 's/#ifndef __CUDACC__/#if !defined(__HIPCC__) \&\& !defined(__CUDACC__)/' src/Vec2.hh
+sed -i -e 's/#ifdef __CUDACC__/#if defined(__HIPCC__) \|\| defined(__CUDACC__)/' src/Vec2.hh
 sed -i -e '85,85s/#else/#elif defined\(__CUDACC__\)/' src/Vec2.hh
 
 sed -i -e '724,724a#ifdef __CUDACC__' -e '738,738a#endif' src/HydroGPU.hip
