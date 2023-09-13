@@ -22,18 +22,16 @@ set(LIBOUT dgemm_lib)
 
 file(GLOB SOURCES "*.cpp")
 
-# set_source_files_properties(
-#   ${SOURCES}
-#   PROPERTIES
-#      HIP_SOURCE_PROPERTY_FORMAT 1
-# )
+set_source_files_properties(${SOURCES} PROPERTIES LANGUAGE ${GPU_RUNTIME})
+set_source_files_properties(${SOURCES} PROPERTIES COMPILE_FLAGS "${HIPCC_FLAGS}")
 
-hip_add_library(${LIBOUT} ${SOURCES})
+add_library(${LIBOUT} ${SOURCES})
 add_executable(${BINOUT} ${SOURCES})
 
 target_include_directories(
   ${LIBOUT}
   PUBLIC
+  ${HIPCC_FLAGS}
      ${CMAKE_CURRENT_LIST_DIR}
 )
 

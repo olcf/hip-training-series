@@ -1,49 +1,68 @@
-# /***************************************************************************
-#  Copyright (c) 2022, Advanced Micro Devices, Inc. All rights reserved.
-# ***************************************************************************/
-
-cmake_minimum_required(VERSION 2.8)
-project(xGEMM)
+cmake_minimum_required(VERSION 3.21 FATAL_ERROR)
+project(dgemm LANGUAGES CXX)
 
 # ----------------------------------------------------------------SET CXX STANDARD--
 set(CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# -------------------------------------------------------------------------INCLUDES--
-include(GNUInstallDirs)
-# ------------------------------------------------------------------------------HIP--
-if (NOT DEFINED HIP_PATH)
-  if (NOT DEFINED ENV{HIP_PATH})
-    set(HIP_PATH "/opt/rocm/hip" CACHE PATH "HIP path")
-  else()
-    set(HIP_PATH $ENV{HIP_PATH} CACHE PATH "HIP path")
-  endif()
+if (NOT CMAKE_BUILD_TYPE)
+   set(CMAKE_BUILD_TYPE RelWithDebInfo)
+endif(NOT CMAKE_BUILD_TYPE)
+
+string(REPLACE -O2 -O3 CMAKE_CXX_FLAGS_RELWITHDEBINFO ${CMAKE_CXX_FLAGS_RELWITHDEBINFO})
+
+# ----------------------------------------------------------------SET GPU RUNTIME for Perlmutter --
+
+if (NOT CMAKE_GPU_RUNTIME)
+   set(GPU_RUNTIME "ROCM" CACHE STRING "Switches between ROCM and CUDA")
+else (NOT CMAKE_GPU_RUNTIME)
+   set(GPU_RUNTIME "${CMAKE_GPU_RUNTIME}" CACHE STRING "Switches between ROCM and CUDA")
+endif (NOT CMAKE_GPU_RUNTIME)
+# Really should only be ROCM or CUDA, but allowing HIP because it is the currently built-in option
+set(GPU_RUNTIMES "ROCM" "CUDA" "HIP")
+if(NOT "${GPU_RUNTIME}" IN_LIST GPU_RUNTIMES)
+    set(ERROR_MESSAGE "GPU_RUNTIME is set to \"${GPU_RUNTIME}\".\nGPU_RUNTIME must be either HIP, ROCM, or CUDA.")
+    message(FATAL_ERROR ${ERROR_MESSAGE})
 endif()
 
-include(${HIP_PATH}/cmake/FindHIP.cmake)
+# GPU_RUNTIME for AMD GPUs should really be ROCM, if selecting AMD GPUs
+# so manually resetting to HIP if ROCM is selected
+if (${GPU_RUNTIME} MATCHES "ROCM")
+   set(GPU_RUNTIME "HIP")
+endif (${GPU_RUNTIME} MATCHES "ROCM")
+set_property(CACHE GPU_RUNTIME PROPERTY STRINGS ${GPU_RUNTIMES})
 
-find_package(HIP REQUIRED)
+enable_language(${GPU_RUNTIME})
+set(CMAKE_${GPU_RUNTIME}_EXTENSIONS OFF)
+set(CMAKE_${GPU_RUNTIME}_STANDARD_REQUIRED ON)
 
-if (HIP_FOUND)
-# List any other hip libs needed
-  find_package(hipblas REQUIRED)
-  if (hipblas_FOUND)
-    message(STATUS "Found ${hipblas_LIBRARIES} in ${hipblas_INCLUDE_DIR}")
-  else()
-    message(FATAL_ERROR "Cannot find hipblas")
-  endif()
+set(CMAKE_${GPU_RUNTIME}_FLAGS_DEBUG "-ggdb")
 
-# set compiler settings
-  set(CMAKE_CXX_COMPILER hipcc)
-  message(STATUS "CMAKE_CXX_COMPILER : ${CMAKE_CXX_COMPILER}")
+# ----------------------------------------------------------------Get HIP PATH and setup hipblas --
+if (DEFINED ENV{HIP_PATH})
+   set(HIP_PATH $ENV{HIP_PATH})
+   set(hipblas_INCLUDE ${HIP_PATH}/hipblas/include)
+   set(hipblas_LIBRARIES ${HIP_PATH}/hipblas/lib/libhipblas.so)
+else (DEFINED ENV{HIP_PATH})
+   execute_process(COMMAND hipconfig --path OUTPUT_VARIABLE HIP_PATH ERROR_QUIET)
+endif (DEFINED ENV{HIP_PATH})
 
-# set compiler flags
-  set(xDGEMM_HIP_FLAGS "-fno-gpu-rdc -munsafe-fp-atomics -fPIC -w" CACHE STRING "Compiler flags for HIP")
-  set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${xDGEMM_HIP_FLAGS}" CACHE STRING "Flags used by the CXX compiler during all build types." FORCE)
-else ()
-  message(FATAL_ERROR "Cannot find hip")
-endif()
+# Make example runnable using ctest
+#add_test(NAME Stream COMMAND stream )
+#set_property(TEST Stream
+#             PROPERTY PASS_REGULAR_EXPRESSION "PASSED!")
+
+set(ROCMCC_FLAGS "${ROCMCC_FLAGS} -fno-gpu-rdc -munsafe-fp-atomics -fPIC -w")
+set(CUDACC_FLAGS "${CUDACC_FLAGS} ")
+
+if (${GPU_RUNTIME} MATCHES "HIP")
+   set(HIPCC_FLAGS "${ROCMCC_FLAGS}")
+else (${GPU_RUNTIME} MATCHES "CUDA")
+   set(HIPCC_FLAGS "${CUDACC_FLAGS} -I/${HIP_PATH}/include")
+endif (${GPU_RUNTIME} MATCHES "HIP")
+
+
 # ------------------------------------------------------------------------------SRC--
 add_subdirectory("src")
 
