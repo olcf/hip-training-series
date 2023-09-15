@@ -1,29 +1,33 @@
 # HIP Lecture Series
 
-## Introduction to HIP Exercises
+We are a bit behind on the documentation for the hands-on exercises for this lecture. So the
+instructions will be filled in as we go along.
+
+## Introduction to Occupancy Exercises
 
 For the HIP Lecture Series, the examples can be retrieved from this repository.
 
 `git clone https://github.com/olcf/hip-training-series`
 
-Below are instructions for doing the exercises on OLCF Frontier. For NERSC Perlmutter, there are two different
-approaches we'll explore for the hands-on exercises. The first is the conventional, simpler approach of 
-separate repositories and build systems for each platform. For this approach, please 
-see [Lecture 1 Exercises for Perlmutter](https://github.com/NERSC/hip-training-series/tree/perlmutter/Lecture1).
+Below are instructions for doing the exercises on OLCF Frontier. We are using portable makefiles
+as in the first two lectures. So the code will also compile on NERSC Perlmutter. But the AMD tools
+will not run on NERSC Perlmutter. On Perlmutter, the exercise will be to evaluate the performance
+impact of each of the variations of the kernel. For an even deeper dive, the Nvidia performance
+tools can be run on Perlmutter to see what they reveal. 
 
-For the single repository, portable build system approach, see the instructions for Nvidia below. NERSC has
+For NERSC Perlmutter, see the instructions for Nvidia below. NERSC has
 installed the AMD ROCm software stack to enable developers on Perlmutter to begin developing more
 portable applications with a single repository. This can greatly reduce code porting and maintenance
 efforts.
 
-This markdown document is located at `'Lecture1/01 Exercises for HIP Introduction.md'` contains 
+This markdown document is located at `'Lecture3/03 Exercises for Occupancy.md'` contains 
 the instructions to run the examples. You can view it in github for better readability or
-download the pdf file `'Lecture1/01 Exercises for HIP Introduction.pdf'` which has been
+download the pdf file `'Lecture3/03 Exercises for Occupancy.pdf'` which has been
 generated from the markdown document.
 
 For the first interactive example, get an slurm interactive session on Frontier (see further below for NERSC Perlmutter):
 
-`salloc -N 1 -p batch --reservation=hip_training_2023_08_14 --gpus=1 -t 10:00 -A <project>`
+`salloc -N 1 -p batch --reservation=hip_training_2023_09_18 --gpus=1 -t 10:00 -A <project>`
 
 Outside the reservation window or if you're not on the reservation list, you can do:
 `salloc -N 1 -p batch --gpus=1 -t 10:00 -A <project>`
@@ -38,19 +42,19 @@ module load cmake
 export CXX=${ROCM_PATH}/llvm/bin/clang++
 ```
 
-### Basic examples
+### Occupancy example
 
-`cd hip-training-series/Lecture1/HIP/vectorAdd `
+`cd hip-training-series/Lecture3/Occupancy `
 
-Examine files here -- README, Makefile, CMakeLists.txt and vectoradd.hip. Notice that the 
-Makefile requires ROCM_PATH to be set. Check with module show rocm or echo $ROCM_PATH. Also, the 
-Makefile builds and runs the code. We'll do the steps separately. Check also the HIPFLAGS 
+Examine files here -- README, Makefile, CMakeLists.txt and occupancy_mxv.cpp. Notice that the 
+Makefile requires ROCM_PATH to be set. Check with module show rocm or echo $ROCM_PATH. The 
+Makefile builds and runs the code. We'll do the steps separately. Check the HIPFLAGS 
 in the Makefile. There is also a CMakeLists.txt file to use for a cmake build.
 
 For the portable Makefile system
 ```
-make vectoradd
-srun ./vectoradd
+make occupancy_mxv
+srun ./occupancy_mxv
 ```
 This example also runs with the cmake system
 
@@ -58,7 +62,7 @@ This example also runs with the cmake system
 mkdir build && cd build
 cmake ..
 make
-srun ./vectoradd
+srun ./occupancy_mxv
 ```
 Now clean up from these exercises before the next part.
 
@@ -80,16 +84,16 @@ for some systems in the example directory.
 #SBATCH -N 1
 #SBATCH --gpus=1
 #SBATCH -t 10:00
-#SBATCH --reservation=hip_training_2023_08_14
+#SBATCH --reservation=hip_training_2023_09_18
 #SBATCH -A <your project id>
 
 module load PrgEnv-amd
 module load amd
 module load cmake
-cd $HOME/hip-training-series/Lecture1/HIP/vectorAdd 
+cd $HOME/hip-training-series/Lecture3/Occupancy
 
-make vectoradd
-srun ./vectoradd
+make occupancy_mxv
+srun ./occupancy_mxv
 ```
 
 Submit the script
@@ -103,7 +107,7 @@ To use the cmake option in the batch file, change the build commands in the batc
 mkdir build && cd build
 cmake ..
 make
-srun ./vectoradd
+srun ./occupancy_mxv
 ```
 
 Compile and run with Cray compiler
@@ -137,7 +141,7 @@ module unload amd-mixed
 module unload cmake
 ```
 
-Now let's try the hip-stream example. This example is from the original McCalpin code as ported to CUDA by Nvidia. This version has been ported to use HIP.
+Now let's run the example with the profiling tools. First let's use the rocprof tool.
 
 ```
 module load PrgEnv-amd
@@ -145,25 +149,28 @@ module load amd
 module load cmake
 cd $HOME/HPCTrainingExamples/HIP/hip-stream
 make
-srun ./stream
+srun ./occupancy_mxv
+nvprof --stats ./occupancy_mxv
 ```
-Note that it builds with the hipcc compiler. You should get a report of the Copy, Scale, Add, and Triad cases.
+The results will be in ...
 
-Test the code on an Nvidia system -- Add `HIPCC=nvcc` before the make command or `-DCMAKE_GPU_RUNTIME=CUDA` to the cmake command. (See README file)
+For a more detailed profile, we use the omniperf tool.
 
-On your own:
-
-1. Check out the saxpy example in `hip-training-series/Lecture1/HIP`
-2. Write your own kernel and run it
+```
+module load PrgEnv-amd
+module load amd
+module load cmake
+cd $HOME/HPCTrainingExamples/HIP/hip-stream
+make
+srun ./occupancy_mxv
+omniperf profile -p $HOME/occupancy/workloads --no-roof -n occupancy -- ./occupancy_mxv
+omniperf analyze -k 1 -t us -p ./occupancy/mi200 >& ./occupancy_0.txt
+```
+The results will be in ...
 
 #### NERSC Perlmutter instructions
-For the hands-on exercise on the NERSC Perlmutter system, there is a reservation under the account ntrain8. Get an allocation with
+For the hands-on exercise on the NERSC Perlmutter system, there will not be a reservation for these exercises. Get an allocation with
 
-```
-salloc -N 1 -C gpu -A ntrain8 --reservation=hip_aug14 -q shared -c 32 -G 1 -t 1:00:00
-```
-
-Outside of reservation window, you can do: 
 ```
 salloc -N 1 -C gpu -A <your_project> -q shared -c 32 -G 1 -t 1:00:00
 ```
@@ -181,9 +188,9 @@ module load cmake
 Build the example
 
 ```
-cd ~/hip-training-series/Lecture1/HIP/vectorAdd
-HIPCC=nvcc make vectoradd
-srun ./vectoradd
+cd ~/hip-training-series/Lecture3/Occupancy
+HIPCC=nvcc make occupancy_mxv
+srun ./occupancy_mxv
 ```
 Cleanup
 
@@ -196,29 +203,10 @@ For the cmake build
 mkdir build && cd build
 cmake -DCMAKE_GPU_RUNTIME=CUDA ..
 make
-srun ./vectoradd
+srun ./occupancy_mxv
 ```
 Cleanup
 ```
 cd ..
 rm -rf build
-```
-
-### More advanced HIP makefile
-
-The jacobi example has a more complex build that incorporates MPI. The original Makefile has not been modified, but a CMakeLists.txt has been
-added to demonstrate a portable cmake build. From an interactive session, try the following steps
-
-```
-cd $HOME/hip-training-series/Lecture1/HIP/jacobi
-
-module load PrgEnv-amd
-module load amd
-module load cray-mpich
-module load cmake
-
-mkdir build && cd build
-cmake ..
-make
-srun -n 1 ./Jacobi_hip
 ```
