@@ -1,18 +1,14 @@
 cmake_minimum_required(VERSION 3.21 FATAL_ERROR)
-project(dgemm LANGUAGES CXX)
+project(Occupancy_mxv_shmem LANGUAGES CXX)
+include(CTest)
 
-# ----------------------------------------------------------------SET CXX STANDARD--
-set(CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_EXTENSIONS OFF)
+set (CMAKE_CXX_STANDARD 14)
 
 if (NOT CMAKE_BUILD_TYPE)
    set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif(NOT CMAKE_BUILD_TYPE)
 
 string(REPLACE -O2 -O3 CMAKE_CXX_FLAGS_RELWITHDEBINFO ${CMAKE_CXX_FLAGS_RELWITHDEBINFO})
-
-# ----------------------------------------------------------------SET GPU RUNTIME for Perlmutter --
 
 if (NOT CMAKE_GPU_RUNTIME)
    set(GPU_RUNTIME "ROCM" CACHE STRING "Switches between ROCM and CUDA")
@@ -25,7 +21,6 @@ if(NOT "${GPU_RUNTIME}" IN_LIST GPU_RUNTIMES)
     set(ERROR_MESSAGE "GPU_RUNTIME is set to \"${GPU_RUNTIME}\".\nGPU_RUNTIME must be either HIP, ROCM, or CUDA.")
     message(FATAL_ERROR ${ERROR_MESSAGE})
 endif()
-
 # GPU_RUNTIME for AMD GPUs should really be ROCM, if selecting AMD GPUs
 # so manually resetting to HIP if ROCM is selected
 if (${GPU_RUNTIME} MATCHES "ROCM")
@@ -39,31 +34,29 @@ set(CMAKE_${GPU_RUNTIME}_STANDARD_REQUIRED ON)
 
 set(CMAKE_${GPU_RUNTIME}_FLAGS_DEBUG "-ggdb")
 
-# ----------------------------------------------------------------Get HIP PATH and setup hipblas --
+set(VECTORADD_CXX_SRCS occupancy_mxv_shmem.cpp)
+
 if (DEFINED ENV{HIP_PATH})
    set(HIP_PATH $ENV{HIP_PATH})
-   set(hipblas_INCLUDE ${HIP_PATH}/hipblas/include)
-   set(hipblas_LIBRARIES ${HIP_PATH}/hipblas/lib/libhipblas.so)
 else (DEFINED ENV{HIP_PATH})
    execute_process(COMMAND hipconfig --path OUTPUT_VARIABLE HIP_PATH ERROR_QUIET)
 endif (DEFINED ENV{HIP_PATH})
 
-# Make example runnable using ctest
-#add_test(NAME Stream COMMAND stream )
-#set_property(TEST Stream
-#             PROPERTY PASS_REGULAR_EXPRESSION "PASSED!")
+add_executable(occupancy_mxv_shmem ${VECTORADD_CXX_SRCS} )
 
-set(ROCMCC_FLAGS "${ROCMCC_FLAGS} -fno-gpu-rdc -munsafe-fp-atomics -fPIC -w")
+# Make example runnable using ctest
+add_test(NAME Occupancy_mxv_shmem COMMAND occupancy_mxv_shmem )
+
+set(ROCMCC_FLAGS "${ROCMCC_FLAGS} -munsafe-fp-atomics")
 set(CUDACC_FLAGS "${CUDACC_FLAGS} ")
 
 if (${GPU_RUNTIME} MATCHES "HIP")
    set(HIPCC_FLAGS "${ROCMCC_FLAGS}")
-else (${GPU_RUNTIME} MATCHES "CUDA")
+else (${GPU_RUNTIME} MATCHES "HIP")
    set(HIPCC_FLAGS "${CUDACC_FLAGS} -I/${HIP_PATH}/include")
 endif (${GPU_RUNTIME} MATCHES "HIP")
 
+set_source_files_properties(${VECTORADD_CXX_SRCS} PROPERTIES LANGUAGE ${GPU_RUNTIME})
+set_source_files_properties(occupancy_mxv_shmem.cpp PROPERTIES COMPILE_FLAGS "${HIPCC_FLAGS}")
 
-# ------------------------------------------------------------------------------SRC--
-add_subdirectory("src")
-
-# EOF
+install(TARGETS occupancy_mxv_shmem)
