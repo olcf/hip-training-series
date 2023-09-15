@@ -5,7 +5,7 @@ make clean
 mkdir build && cd build
 cmake ..
 make
-./occupancy_mxv_naive
+srun ./occupancy_mxv_naive
 cd ..
 make clean
 cd ..
@@ -15,7 +15,7 @@ make clean
 mkdir build && cd build
 cmake ..
 make
-./occupancy_mxv_shmem
+srun ./occupancy_mxv_shmem
 make clean
 cd ..
 make clean
@@ -26,7 +26,7 @@ make clean
 mkdir build && cd build
 cmake ..
 make
-./occupancy_mxv_shmem_batched
+srun ./occupancy_mxv_shmem_batched
 make clean
 cd ..
 make clean
@@ -37,7 +37,7 @@ make clean
 mkdir build && cd build
 cmake ..
 make
-./occupancy_mxv_shmem_batched_unroll
+srun ./occupancy_mxv_shmem_batched_unroll
 make clean
 cd ..
 make clean
@@ -48,7 +48,7 @@ make clean
 mkdir build && cd build
 cmake ..
 make
-./occupancy_mxv_shmem_A
+srun ./occupancy_mxv_shmem_A
 make clean
 cd ..
 make clean
