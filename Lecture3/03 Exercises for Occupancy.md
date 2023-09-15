@@ -75,6 +75,60 @@ module unload amd
 module unload cmake
 ```
 
+### Run all the different versions
+
+```
+module load PrgEnv-amd
+module load amd
+module load cmake
+export CXX=${ROCM_PATH}/llvm/bin/clang++
+
+./run_maketests.sh
+grep GFLOPS */*.out
+```
+
+You should get something like the following:
+
+
+```
+Occupancy_naive/occupancy.out:0.0217501 Time - GFLOPS 987.345
+Occupancy_shmem/occupancy.out:0.0192239 Time - GFLOPS 1117.09
+Occupancy_shmem_A/occupancy.out:0.0224112 Time - GFLOPS 958.218
+Occupancy_shmem_batched/occupancy.out:0.019235 Time - GFLOPS 1116.45
+Occupancy_shmem_batched_unroll/occupancy.out:0.0136489 Time - GFLOPS 1573.38
+```
+
+### Add the profiling tools
+
+Now let's run the example with the profiling tools. First let's use the rocprof tool.
+
+```
+module load PrgEnv-amd
+module load amd
+module load cmake
+cd $HOME/HPCTrainingExamples/HIP/hip-stream
+make
+srun ./occupancy_mxv
+nvprof --stats ./occupancy_mxv
+```
+The results will be in ...
+
+For a more detailed profile, we use the omniperf tool.
+
+```
+module load PrgEnv-amd
+module load amd
+module load cmake
+cd $HOME/HPCTrainingExamples/HIP/hip-stream
+make
+srun ./occupancy_mxv
+omniperf profile -p $HOME/occupancy/workloads --no-roof -n occupancy -- ./occupancy_mxv
+omniperf analyze -k 1 -t us -p ./occupancy/mi200 >& ./occupancy_0.txt
+```
+The results will be in ...
+
+### Batch submission
+
 We can use a SLURM submission script, let's call it `hip_batch.sh`. There is a sample script
 for some systems in the example directory.
 
@@ -110,7 +164,7 @@ make
 srun ./occupancy_mxv
 ```
 
-Compile and run with Cray compiler
+### Compile and run with Cray compiler
 
 ```
 module load PrgEnv-cray
@@ -141,35 +195,16 @@ module unload amd-mixed
 module unload cmake
 ```
 
-Now let's run the example with the profiling tools. First let's use the rocprof tool.
-
-```
-module load PrgEnv-amd
-module load amd
-module load cmake
-cd $HOME/HPCTrainingExamples/HIP/hip-stream
-make
-srun ./occupancy_mxv
-nvprof --stats ./occupancy_mxv
-```
-The results will be in ...
-
-For a more detailed profile, we use the omniperf tool.
-
-```
-module load PrgEnv-amd
-module load amd
-module load cmake
-cd $HOME/HPCTrainingExamples/HIP/hip-stream
-make
-srun ./occupancy_mxv
-omniperf profile -p $HOME/occupancy/workloads --no-roof -n occupancy -- ./occupancy_mxv
-omniperf analyze -k 1 -t us -p ./occupancy/mi200 >& ./occupancy_0.txt
-```
-The results will be in ...
 
 #### NERSC Perlmutter instructions
-For the hands-on exercise on the NERSC Perlmutter system, there will not be a reservation for these exercises. Get an allocation with
+
+For the hands-on exercise on the NERSC Perlmutter system, there is a reservation under the account ntrain8. Get an allocation with
+
+```
+salloc -N 1 -C gpu -A ntrain8 --reservation=hip_sept18 -q shared -c 32 -G 1 -t 1:00:00
+```
+
+Outside of reservation window, you can do:
 
 ```
 salloc -N 1 -C gpu -A <your_project> -q shared -c 32 -G 1 -t 1:00:00
@@ -192,6 +227,24 @@ cd ~/hip-training-series/Lecture3/Occupancy
 HIPCC=nvcc make occupancy_mxv
 srun ./occupancy_mxv
 ```
+
+### Run all the tests
+
+```
+./run_maketests.sh
+grep GFLOPS */*.out
+```
+
+You should get the something like the following results
+
+```
+Occupancy_naive/occupancy.out:0.0132262 Time - GFLOPS 1623.66
+Occupancy_shmem_A/occupancy.out:0.0132137 Time - GFLOPS 1625.2
+Occupancy_shmem_batched/occupancy.out:0.0134865 Time - GFLOPS 1592.32
+Occupancy_shmem_batched_unroll/occupancy.out:0.0122282 Time - GFLOPS 1756.18
+Occupancy_shmem/occupancy.out:0.013485 Time - GFLOPS 1592.5
+```
+
 Cleanup
 
 ```
