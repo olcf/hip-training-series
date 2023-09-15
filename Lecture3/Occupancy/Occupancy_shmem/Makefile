@@ -1,9 +1,9 @@
-EXECUTABLE = ./occupancy_mxv
+EXECUTABLE = ./occupancy_mxv_shmem
 all: $(EXECUTABLE)
 
 .PHONY: test
 
-OBJECTS = occupancy_mxv.o
+OBJECTS = occupancy_mxv_shmem.o
 
 CXX=hipcc
 CXXFLAGS = -g -O2 -DNDEBUG
@@ -25,4 +25,4 @@ test: $(EXECUTABLE)
 	$(EXECUTABLE)
 
 clean:
-	rm -rf $(EXECUTABLE) $(OBJECTS) build
+	@rm -rf $(EXECUTABLE) $(OBJECTS) build
