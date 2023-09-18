@@ -47,8 +47,7 @@ add_executable(occupancy_mxv_shmem ${VECTORADD_CXX_SRCS} )
 # Make example runnable using ctest
 add_test(NAME Occupancy_mxv_shmem COMMAND occupancy_mxv_shmem )
 
-set(ROCMCC_FLAGS "${ROCMCC_FLAGS} -munsafe-fp-atomics")
-#set(ROCMCC_FLAGS "${ROCMCC_FLAGS} -munsafe-fp-atomics -Rpass-analysis=kernel-resource-usage")
+set(ROCMCC_FLAGS "${ROCMCC_FLAGS} -munsafe-fp-atomics -Rpass-analysis=kernel-resource-usage")
 set(CUDACC_FLAGS "${CUDACC_FLAGS} ")
 
 if (${GPU_RUNTIME} MATCHES "HIP")

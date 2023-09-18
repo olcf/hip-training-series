@@ -1,8 +1,5 @@
 # HIP Lecture Series
 
-We are a bit behind on the documentation for the hands-on exercises for this lecture. So the
-instructions will be filled in as we go along.
-
 ## Introduction to Occupancy Exercises
 
 For the HIP Lecture Series, the examples can be retrieved from this repository.
@@ -97,6 +94,27 @@ Occupancy_shmem_A/occupancy.out:0.0224112 Time - GFLOPS 958.218
 Occupancy_shmem_batched/occupancy.out:0.019235 Time - GFLOPS 1116.45
 Occupancy_shmem_batched_unroll/occupancy.out:0.0136489 Time - GFLOPS 1573.38
 ```
+### Versions corresponding to the talk
+
+Use the Occupancy_shmem_batched either in the main file or the subdirectory. Note that the
+V2 and V3 are equivalent to the Occupancy_shmem version where there is no batch parameter
+(i.e. batch = 1)
+
+Modify the defines at the top of the file
+
+#define batch 1
+#define Nm 4
+#define nThreads 256
+#define Nunroll 4
+
+Here is an example of the results on Frontier
+
+V0 batch 32 nThreads 128 -- GFLOPS 60.68 VGPR 74  LDS 65536  Occupancy 2
+V1 batch 16 nThreads 256 -- GFLOPS 105.08 VGPR 42  LDS 65536  Occupancy 4
+V2 batch 1 nThreads 128 -- GFLOPS 1168.98 VGPR 38  LDS 2048  Occupancy 8
+V3 batch 1 nThreads 256 -- GFLOPS 1171.88 VGPR 38  LDS 4096  Occupancy 8
+
+Try the same exercise on the Occupancy_mxv_shared_batch_unroll version
 
 ### Add the profiling tools
 
@@ -109,7 +127,7 @@ module load cmake
 cd $HOME/HPCTrainingExamples/HIP/hip-stream
 make
 srun ./occupancy_mxv
-nvprof --stats ./occupancy_mxv
+rocprof --stats ./occupancy_mxv
 ```
 The results will be in ...
 
@@ -244,6 +262,27 @@ Occupancy_shmem_batched/occupancy.out:0.0134865 Time - GFLOPS 1592.32
 Occupancy_shmem_batched_unroll/occupancy.out:0.0122282 Time - GFLOPS 1756.18
 Occupancy_shmem/occupancy.out:0.013485 Time - GFLOPS 1592.5
 ```
+### Versions corresponding to the talk
+
+Use the Occupancy_shmem_batched either in the main file or the subdirectory. Note that the
+V2 and V3 are equivalent to the Occupancy_shmem version where there is no batch parameter
+(i.e. batch = 1)
+
+Modify the defines at the top of the file
+
+#define batch 1
+#define Nm 4
+#define nThreads 256
+#define Nunroll 4
+
+Here is an example of the results on Perlmutter
+
+V0 batch 32 nThreads 128 -- too much shared data (0x10000 bytes, 0xc000 max)
+V0* batch 16 nthreads 128 -- 0.102533 Time - GFLOPS 209.443
+V1 batch 16 nThreads 256 -- too much shared data (0x10000 bytes, 0xc000 max)
+V1* batch 8 nThreads 256 -- 0.0873428 Time - GFLOPS 245.868
+V2 batch 1 nThreads 128 -- 0.0134582 Time - GFLOPS 1595.67
+V3 batch 1 nThreads 256 -- 0.0138559 Time - GFLOPS 1549.87
 
 Cleanup
 

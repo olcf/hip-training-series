@@ -48,8 +48,7 @@ add_executable(occupancy_mxv ${VECTORADD_CXX_SRCS} )
 add_test(NAME Occupancy_mxv COMMAND occupancy_mxv )
 set_property(TEST Occupancy_mxv PROPERTY PASS_REGULAR_EXPRESSION "PASSED!")
 
-set(ROCMCC_FLAGS "${ROCMCC_FLAGS} -munsafe-fp-atomics")
-#set(ROCMCC_FLAGS "${ROCMCC_FLAGS} -munsafe-fp-atomics -Rpass-analysis=kernel-resource-usage")
+set(ROCMCC_FLAGS "${ROCMCC_FLAGS} -munsafe-fp-atomics -Rpass-analysis=kernel-resource-usage")
 set(CUDACC_FLAGS "${CUDACC_FLAGS} ")
 
 if (${GPU_RUNTIME} MATCHES "HIP")
