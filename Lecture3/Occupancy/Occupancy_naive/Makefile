@@ -16,6 +16,7 @@ ifeq ($(HIP_PLATFORM), nvidia)
 endif
 ifeq ($(HIP_PLATFORM), amd)
    CXXFLAGS += -x hip -munsafe-fp-atomics
+   #CXXFLAGS += -x hip -munsafe-fp-atomics -Rpass-analysis=kernel-resource-usage
 endif
 
 $(EXECUTABLE): $(OBJECTS)
