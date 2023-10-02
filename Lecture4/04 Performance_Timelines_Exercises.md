@@ -67,13 +67,13 @@ make
 ```
 Run application to make sure it is workig
 ```
-srun ./saxpy
+./saxpy
 ```
 It should report "PASSED!"
 
 Run with rocprof
 ```
-srun rocprof --stats ./saxpy
+rocprof --stats ./saxpy
 ```
 Check output from the stats report
 
@@ -95,9 +95,11 @@ rocprof --hip-trace --hsa-trace ./saxpy
 Copy back to local system. From your local system:
 
 ```
-scp frontier:hip-training-series/Lecture3/saxpy/results.json
+scp [username@]frontier.olcf.ornl.gov:hip-training-series/Lecture4/saxpy/results.json results.json
 ```
-Start up the chrome browser. Open the trace file
+Start up the chrome browser. Put ui.perfetto.com in the location. Then open the trace file
+
+You should see a very simple timeline presentation in the browser. Try moving around with the WASD keys. Now we are ready to move to a more complex example.
 
 ### A more complex code with MPI
 
@@ -106,7 +108,10 @@ We'll run a multi-process code to see a more complex timeline
 Setup environment
 ```bash
 salloc -N 1 -n 2 -p batch --reservation=hip_training_2023_10_02 --gpus=2 -t 15:00 -A <project>
-module load rocm openmpi
+module load PrgEnv-amd
+module load amd
+module load cmake
+export CXX=${ROCM_PATH}/llvm/bin/clang++
 ```
 Download examples repo and navigate to the `HIPIFY` exercises
 ```bash
@@ -118,6 +123,8 @@ mkdir build && cd build
 cmake ..
 make
 ```
+Currently seeing error finding roctx64 and roctracer64
+
 First run executable to check if running correctly
 ```
 srun -n 2 ./Jacobi_hip -g 2
