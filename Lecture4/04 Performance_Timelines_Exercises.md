@@ -67,13 +67,13 @@ make
 ```
 Run application to make sure it is workig
 ```
-./saxpy
+srun ./saxpy
 ```
 It should report "PASSED!"
 
 Run with rocprof
 ```
-rocprof --stats ./saxpy
+srun rocprof --stats ./saxpy
 ```
 Check output from the stats report
 
@@ -120,11 +120,11 @@ make
 ```
 First run executable to check if running correctly
 ```
-mpirun -n 2 ./Jacobi_hip -g 2
+srun -n 2 ./Jacobi_hip -g 2
 ```
 Run `rocprof` on jacobi to obtain trace files
 ```bash
-mpirun -n 2 rocprof_wrapper.sh output ./Jacobi_hip -g 2
+srun -n 2 rocprof_wrapper.sh output ./Jacobi_hip -g 2
 ```
 But we need a rocprof_wrapper.sh for creating separate files for the output. Here is one
 for some versions of MPI. We'll cover how to modify it for other systems and MPI versions.
@@ -134,19 +134,32 @@ for some versions of MPI. We'll cover how to modify it for other systems and MPI
 set -euo pipefail
 outdir=$1
 name=$2
-outdir=${outdir}_${OMPI_COMM_WORLD_RANK}
-outfile="${name}_${OMPI_COMM_WORLD_RANK}.csv
+outdir="${outdir}_${OMPI_COMM_WORLD_RANK}"
+outfile="${name}_${OMPI_COMM_WORLD_RANK}.csv"
 rocprof -d ${outdir} --hsa-trace --hip-trace -o ${outdir}/${outfile} ./Jacobi_hip $3 $4
 ```
 The key here is to have a different output file name and/or directory to feed into the
 rocprof command. For a different MPI, run `mpirun -n 2 printenv` and see what environment
 variable has the rank number in it. Substitute it for the `${OMPI_COMM_WORLD_RANK}` variable
-above. Another option is to encode the process id into the strings with
+above. 
+
+```
+srun -n 2 printenv
+```
+
+
+Another option is to encode the process id into the strings. This approach is shown in
+the wrapper.sh script.
 
 ```
 pid=$$
-outdir=${outdir}_${pid}
-outfile="${name}_${pid}.csv
+outdir="${outdir}_${pid}"
+outfile="${name}_${pid}.csv"
+```
+To run with the PIDs:
+
+```
+srun -n 2 wrapper.sh output ./Jacobi_hip -g 2
 ```
 
 Check Results
@@ -167,7 +180,7 @@ cat results.stats.csv
 ```
 Trace HIP calls with `--hip-trace`
 ```bash
-rocprof --stats --hip-trace nbody-orig 65536
+srun rocprof --stats --hip-trace nbody-orig 65536
 ```
 Check the new file `results.hip_stats.csv`
 ```bash
@@ -175,7 +188,7 @@ cat results.hip_stats.csv
 ```
 Profile also the HSA API with the `--hsa-trace`
 ```bash
-rocprof --stats --hip-trace --hsa-trace nbody-orig 65536
+srun rocprof --stats --hip-trace --hsa-trace nbody-orig 65536
 ```
 Check the new file `results.hsa_stats.csv`
 ```bash
@@ -183,7 +196,7 @@ cat results.hsa_stats.csv
 ```
 On your laptop, download `results.json`
 ```bash
-scp scp://USER@aac1.amd.com:<PORT>/~/HPCTrainingExamples/HIPIFY/mini-nbody/hip/results.json ./
+scp <username>@frontier.olcf.ornl.gov/hip-training-series/Lecture4/jacobi/results.json ./
 ```
 Open a browser and go to [https://ui.perfetto.dev/](https://ui.perfetto.dev/).
 Click on `Open trace file` in the top left corner.
@@ -208,7 +221,7 @@ pmc : MemUnitBusy ALUStalledByLDS
 ```
 Execute with the counters we just added:
 ```bash
-rocprof --timestamp on -i rocprof_counters.txt  nbody-orig 65536
+srun rocprof --timestamp on -i rocprof_counters.txt  nbody-orig 65536
 ```
 You'll notice that `rocprof` runs 3 passes, one for each set of counters we have in that file.
 
@@ -254,7 +267,7 @@ export OMNITRACE_CONFIG_FILE=~/omnitrace.cfg
 
 Go to the jacobi code in the examples repo:
 ```bash
-cd ~/HPCTrainingExamples/HIP/jacobi
+cd hip-lecture-series/Lecture4/jacobi
 ```
 Compile
 ```bash
@@ -264,19 +277,19 @@ Execute the binary to make sure it runs successfully:
   - Note: To get rid of `Read -1, expected 4136, errno = 1` add `--mca pml ucx --mca pml_ucx_tls ib,sm,tcp,self,cuda,rocm` to the `mpirun` command line
 
 ```bash
-mpirun -np 1 ./Jacobi_hip -g 1 1
+srun -np 1 ./Jacobi_hip -g 1 1
 ```
 
 ## Dynamic Instrumentation
 (WARNING) - this may in the current container
 Run the code with omnitrace to get runtime instrumentation. Time it to see overhead of dyninst loading all libraries in the beginning.
 ```bash
-mpirun -np 1 omnitrace-instrument -- ./Jacobi_hip -g 1 1
+srun -np 1 omnitrace-instrument -- ./Jacobi_hip -g 1 1
 ```
 Check available functions to instrument using the `--print-available functions` option.
 Note, the `--simulate` option will not execute the binary.
 ```bash
-mpirun -np 1 omnitrace-instrument -v 1 --simulate --print-available functions -- ./Jacobi_hip -g 1 1
+srun -np 1 omnitrace-instrument -v 1 --simulate --print-available functions -- ./Jacobi_hip -g 1 1
 ```
 
 ## Binary Rewrite
@@ -286,7 +299,7 @@ omnitrace-instrument -o ./Jacobi_hip.inst -- ./Jacobi_hip
 ```
 Executing the new instrumented binary, time it to see lower overhead:
 ```bash
-mpirun -np 1 omnitrace-run -- ./Jacobi_hip.inst -g 1 1
+srun -np 1 omnitrace-run -- ./Jacobi_hip.inst -g 1 1
 ```
 See the list of the instrumented GPU calls:
 ```bash
@@ -296,7 +309,7 @@ cat omnitrace-Jacobi_hip.inst-output/<TIMESTAMP>/roctracer-0.txt
 ## Visualization
 Copy the `perfetto-trace-0.proto` to your laptop, open the web page [https://ui.perfetto.dev/](https://ui.perfetto.dev/)
 ```bash
-scp scp://USER@aac1.amd.com:<PORT>/~/HPCTrainingExamples/HIP/jacobi/omnitrace-Jacobi_hip.inst-output/TIMESTAMP/perfetto-trace-0.proto ./
+scp <username>@frontier.olcf.ornl.gov/hip-training-series/Lecture4/jacobi/omnitrace-Jacobi_hip.inst-output/TIMESTAMP/perfetto-trace-0.proto ./
 ```
 Click `Open trace file` and select the `.proto` file
 
@@ -317,13 +330,13 @@ grep OMNITRACE_ROCM_EVENTS $OMNITRACE_CONFIG_FILE
 ```
 Run the instrumented binary, and visualize the Perfetto trace produced to see the hardware counters:
 ```bash
-mpirun -np 1 omnitrace-run -- ./Jacobi_hip.inst -g 1 1
+srun -np 1 omnitrace-run -- ./Jacobi_hip.inst -g 1 1
 ```
 
 ## Profiling Multiple Ranks
 Run the instrumented binary with multiple ranks. You'll find multiple `perfetto-trace-*.proto` files, one for each rank.
 ```bash
-mpirun -np 2 omnitrace-run -- ./Jacobi_hip.inst -g 2 1
+srun -np 2 omnitrace-run -- ./Jacobi_hip.inst -g 2 1
 ```
 You can visualize them separately in Perfetto, or combine them using cat and visualize them in the same Perfetto window.
 ```bash
@@ -359,88 +372,4 @@ Execute the code and check the `wall_clock-0.txt` file again.
 ```bash
 OMNITRACE_USE_TIMEMORY=true OMNITRACE_FLAT_PROFILE=true mpirun -np 1 omnitrace-run -- ./Jacobi_hip.inst -g 1 1
 ```
-
---------------------------------------------------------------
-
-\pagebreak{}
-
-# Omniperf
-
-## vcopy
-
-Setup environment
-```bash
-module load rocm openmpi
-```
-Get sample code
-```bash
-wget https://github.com/AMDResearch/omniperf/raw/main/sample/vcopy.cpp
-```
-Compile
-```bash
-hipcc -o vcopy vcopy.cpp
-```
-
-NOTE: THIS FAILS BECAUSE ROOFLINE CODE IS MISSING 
-
-Profile with omniperf
-```bash
-omniperf profile -n vcopy_all -- ./vcopy 1048576 256
-```
-A new directory will be created named `workloads/vcopy_all`.
-
-Analyze the collected profile using the built-in CLI
-```bash
-omniperf analyze -p workloads/vcopy_all/mi200/ &> vcopy_analyze.txt
-```
-View `vcopy_analyze.txt`
-```bash
-less vcopy_analyze.txt
-```
-We can select specific IP Blocks to analyze
-```bash
-omniperf analyze -p workloads/vcopy_all/mi200/ -b 7.1.2
-```
-If you've installed Omniperf on your laptop ( No ROCm Required ), you can
-download `workloads/vcopy_all/mi200/` to your laptop and
-run omniperf with `--gui` option
-```bash
-omniperf analyze -p workloads/vcopy_all/mi200/ --gui
-```
-Open the following in your browser
-```url
-http://172.21.7.117:8050/
-```
-![image](https://user-images.githubusercontent.com/109979778/225511493-c7cccc21-9cb8-426f-82da-7f790066aa89.png)
-
-## dgemm
-
-```
-cd HPCTrainingExamples/dgemm
-
-mkdir build && cd build
-cmake ..
-make
-```
-Profile and analyze code
-
-```
-omniperf profile -n dgemm -- ./dgemm
-omniperf analyze -p workloads/dgemm/mi200 >& omniperf.out
-less omniperf.out
-```
-
-
-
-
-
-# Disclaimer
-
-The information presented in this document is for informational purposes only and may contain technical inaccuracies, omissions, and typographical errors. The information contained herein is subject to change and may be rendered inaccurate for many reasons, including but not limited to product and roadmap changes, component and motherboard version changes, new model and/or product releases, product differences between differing manufacturers, software changes, BIOS flashes, firmware upgrades, or the like. Any computer system has risks of security vulnerabilities that cannot be completely prevented or mitigated.  AMD assumes no obligation to update or otherwise correct or revise this information. However, AMD reserves the right to revise this information and to make changes from time to time to the content hereof without obligation of AMD to notify any person of such revisions or changes.
-
-THIS INFORMATION IS PROVIDED "AS IS." AMD MAKES NO REPRESENTATIONS OR WARRANTIES WITH RESPECT TO THE CONTENTS HEREOF AND ASSUMES NO RESPONSIBILITY FOR ANY INACCURACIES, ERRORS, OR OMISSIONS THAT MAY APPEAR IN THIS INFORMATION. AMD SPECIFICALLY DISCLAIMS ANY IMPLIED WARRANTIES OF NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR ANY PARTICULAR PURPOSE. IN NO EVENT WILL AMD BE LIABLE TO ANY PERSON FOR ANY RELIANCE, DIRECT, INDIRECT, SPECIAL, OR OTHER CONSEQUENTIAL DAMAGES ARISING FROM THE USE OF ANY INFORMATION CONTAINED HEREIN, EVEN IF AMD IS EXPRESSLY ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
-
-Third-party content is licensed to you directly by the third party that owns the content and is not licensed to you by AMD.  ALL LINKED THIRD-PARTY CONTENT IS PROVIDED "AS IS" WITHOUT A WARRANTY OF ANY KIND.  USE OF SUCH THIRD-PARTY CONTENT IS DONE AT YOUR SOLE DISCRETION AND UNDER NO CIRCUMSTANCES WILL AMD BE LIABLE TO YOU FOR ANY THIRD-PARTY CONTENT.  YOU ASSUME ALL RISK AND ARE SOLELY RESPONSIBLE FOR ANY DAMAGES THAT MAY ARISE FROM YOUR USE OF THIRD-PARTY CONTENT.
-
-© 2023 Advanced Micro Devices, Inc. All rights reserved. AMD, the AMD Arrow logo, ROCm, Radeon, Radeon Instinct and combinations thereof are trademarks of Advanced Micro Devices, Inc. in the United States and/or other jurisdictions. Other names are for informational purposes only and may be trademarks of their
 
