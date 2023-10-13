@@ -2,26 +2,28 @@
 #include<chrono>
 #include"hipCheck.h"
 
+__global__ 
+__launch_bounds__(256) void yax(double* y,
+		                double* A,
+		                double* x,
+		                int n, int m, 
+		                double* result){
+  __shared__ double res;
 
-__global__ void yax(double* y,
-		    double* A,
-		    double* x,
-		    int n, int m, 
-		    double* result){
-  double res = 0.0;
-  for(int i = blockDim.x * blockIdx.x + threadIdx.x; i < n; 
-	  i += gridDim.x * blockDim.x){
+  for(int i = blockDim.x * blockIdx.x; i < n; i += gridDim.x * blockDim.x){
     double temp = 0.0;
-    for(int j = 0; j < m; j++){
-      temp += A[i*n+j] * x[j];
+
+    for(int j = threadIdx.x; j < m; j+=blockDim.x){
+      temp += A[i*m + j] * x[j];
     }
-    res += y[i] * temp;
+    unsafeAtomicAdd(&res,temp);
+    if(threadIdx.x == 0) res *= y[i];
   }
-  unsafeAtomicAdd(&result[0],res);
+  if(threadIdx.x==0) unsafeAtomicAdd(&result[0],res);
 }
 
 int main(int argc, char** argv){
-  dim3 grid = dim3(4,1,1);
+  dim3 grid = dim3(2048,1,1);
   dim3 block = dim3(64,1,1);
   int n = 2<<14;
   int m = 2<<14;
@@ -35,7 +37,7 @@ int main(int argc, char** argv){
   hipCheck(hipMalloc(&x, m*sizeof(double)));
   hipCheck(hipMalloc(&A, n*m*sizeof(double)));
   hipCheck(hipMalloc(&result, sizeof(double)));
-
+  
   for(int i = 0; i < n; i++){
     y[i] = 1;
   }
@@ -45,12 +47,13 @@ int main(int argc, char** argv){
   for(int i = 0; i < n*m; i++){
     A[i] = 1;
   }
-  result[0] = 0;
+  result[0] = 0.0;
+
 
   yax<<<grid,block>>>(y,A,x,n,m,result);
   hipDeviceSynchronize();
-  result[0] = 0;
-
+  result[0] = 0.0;
+  
   auto start = std::chrono::high_resolution_clock::now();
   yax<<<grid,block>>>(y,A,x,n,m,result);
   hipDeviceSynchronize();
@@ -68,6 +71,7 @@ int main(int argc, char** argv){
   hipFree(y);
   hipFree(x);
   hipFree(A);
+
   return 0;
 }
 
