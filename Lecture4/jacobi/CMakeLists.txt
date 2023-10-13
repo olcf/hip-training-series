@@ -47,7 +47,7 @@ set(CUDACC_FLAGS "${CUDACC_FLAGS} ${MPI_INCLUDE_PATH}")
 
 if (${GPU_RUNTIME} MATCHES "HIP")
    set(HIPCC_FLAGS "${ROCMCC_FLAGS} -D__HIP_PLATFORM_AMD__")
-   set(HIPCC_LIBS "-lroctracer64 -lroctx64")
+   set(HIPCC_LIBS "-L$ENV{ROCM_PATH}/roctracer/lib -lroctracer64 -lroctx64")
 else (${GPU_RUNTIME} MATCHES "HIP")
    set(HIPCC_FLAGS "${CUDACC_FLAGS} -D__HIP_PLATFORM_NVIDIA__")
    set(HIPCC_LIBS "")
