@@ -2,10 +2,14 @@
 
 To load the appropriate environment, you should be able to simply run:
 ```
-module load PrgEnv-amd amd omniperf/1.1.0-PR1
+module use  /autofs/nccs-svm1_sw/crusher/amdsw/modules
+module load PrgEnv-amd amd omniperf
 ```
 This should pull in Omniperf, ROCm, and all the dependencies necessary to run our exercises.
 It is worthy of note that this version of Omniperf is a pre-release candidate for 1.1.0.
+
+The module use command will make the omniperf/1.1.0-PR1 pre-release version the default and 
+then the module load omniperf will get this version.
 
 >Note: By default this loads ROCm 5.3.0, which may not show the issue talked about in Exercise 3: Register Occupancy Limiter
 
@@ -20,6 +24,7 @@ Outside our reservation window, you can do:
 ```
 salloc -N 1 -p batch --gpus=1 -t 10:00 -A <project>
 ```
+
 As is usual in this lecture series, the linked Google doc for comments, questions and answers
 will be at https://docs.google.com/document/d/1aUfzofSgxCn-gkejJHDlh54YX5mRMaj5xkAO7zEZUkQ/edit
 
