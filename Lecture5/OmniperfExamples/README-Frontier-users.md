@@ -21,4 +21,5 @@ Outside our reservation window, you can do:
 salloc -N 1 -p batch --gpus=1 -t 10:00 -A <project>
 ```
 
-
+As is usual in this lecture series, the linked Google doc for comments, questions and answers
+will be at https://docs.google.com/document/d/1aUfzofSgxCn-gkejJHDlh54YX5mRMaj5xkAO7zEZUkQ/edit
